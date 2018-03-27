@@ -36,7 +36,7 @@ setup(
     long_description=readme + '\n\n' + history,
     author="Simon Perkins",
     author_email='sperkins@ska.ac.za',
-    url='https://github.com/sjperkins/xarrayfits',
+    url='https://github.com/ska-sa/xarray-fits',
     packages=find_packages(include=['xarrayfits']),
     include_package_data=True,
     install_requires=requirements,
