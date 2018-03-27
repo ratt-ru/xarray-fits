@@ -12,7 +12,7 @@ To install xarray-fits, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install xarrayfits
+    $ pip install xarray-fits
 
 This is the preferred method to install xarray-fits, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/sjperkins/xarrayfits
+    $ git clone git://github.com/ska-sa/xarray-fits
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/sjperkins/xarrayfits/tarball/master
+    $ curl  -OL https://github.com/ska-sa/xarray-fits/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/sjperkins/xarrayfits
-.. _tarball: https://github.com/sjperkins/xarrayfits/tarball/master
+.. _Github repo: https://github.com/ska-sa/xarray-fits
+.. _tarball: https://github.com/ska-sa/xarray-fits/tarball/master
