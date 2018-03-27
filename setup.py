@@ -30,7 +30,7 @@ test_requirements = [
 ]
 
 setup(
-    name='xarrayfits',
+    name='xarray-fits',
     version='0.1.0',
     description="xarray Datasets interacting with FITS files",
     long_description=readme + '\n\n' + history,
