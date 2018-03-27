@@ -15,6 +15,7 @@ requirements = [
     "astropy >= 2.0.4",
     "dask >= 0.17.0",
     "six",
+    "toolz",
     "xarray >= 0.10.0",
     # TODO: Put package requirements here
 ]
