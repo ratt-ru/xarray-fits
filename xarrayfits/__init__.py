@@ -8,6 +8,7 @@ __version__ = '0.1.2'
 
 import logging
 
+
 def __create_logger():
     # Console formatter, mention name
     cfmt = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
@@ -25,6 +26,7 @@ def __create_logger():
 
     return logger
 
+
 log = __create_logger()
 
-from xarrayfits.fits import xds_from_fits
+from xarrayfits.fits import xds_from_fits  # noqa

@@ -24,7 +24,7 @@ class FitsProxy(object):
         self.__init__(*state)
 
     def __getstate__(self):
-        return  (self._filename, self._kwargs)
+        return (self._filename, self._kwargs)
 
     def __call__(self, fn, *args, **kwargs):
         return getattr(self._fits_file, fn)(*args, **kwargs)
