@@ -1,6 +1,6 @@
 FROM kernsuite/base:dev
-RUN docker-apt-install python3-pip pytest
-RUN pip3 install --upgrade pip setuptools
+RUN docker-apt-install python3-pip
+RUN pip3 install --upgrade pip setuptools pytest
 ADD . /code
 WORKDIR /code
 RUN pip3 install .
