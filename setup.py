@@ -12,6 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
+    "future",
     "astropy >= 2.0.4",
     "dask >= 0.17.0",
     "six",

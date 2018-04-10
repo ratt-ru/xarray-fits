@@ -2,7 +2,7 @@
 
 """Main module."""
 
-from future_builtins import zip, map
+from builtins import zip, map
 
 from collections import OrderedDict
 from functools import partial
@@ -80,7 +80,7 @@ BITPIX_MAP = {
     np.float64: -64,
 }
 
-INV_BITPIX_MAP = { v: k for k, v in BITPIX_MAP.items() }
+INV_BITPIX_MAP = { v: k for k, v in list(BITPIX_MAP.items()) }
 
 ranges = lambda c: accumulate(add, cons(0, c))
 slices = lambda r: (slice(s,e) for s, e in zip(r[:-1], r[1:]))
@@ -120,7 +120,7 @@ def generate_slice_gets(fits_filename, fits_key, fits_graph,
     dsk_chunks = da.core.normalize_chunks(chunks, shape)
 
     # Produce keys and slices
-    keys = product([name], *[range(len(bd)) for bd in dsk_chunks])
+    keys = product([name], *[list(range(len(bd))) for bd in dsk_chunks])
     slices_ = product(*[slices(tuple(ranges(c))) for c in dsk_chunks])
 
     # Create dask graph
@@ -199,7 +199,7 @@ def _xarray_from_fits_hdu(fits_filename, fits_key, fits_graph,
 
     name = '%s%d' % (name_prefix, hdu_index)
     dims = tuple("%s-%d" % (name, i) for i in range(3, 0, -1))
-    attrs = {"fits_header": OrderedDict((k, v) for k,v in hdu.header.items())}
+    attrs = {"fits_header": OrderedDict((k, v) for k,v in list(hdu.header.items()))}
     return xr.DataArray(array, dims=dims, attrs=attrs)
 
 

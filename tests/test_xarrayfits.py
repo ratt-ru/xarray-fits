@@ -109,10 +109,10 @@ if __name__ == "__main__":
     chunks={"NAXIS1": 513, "NAXIS2": 513, "NAXIS3" : 1}
     data = xds_from_fits(args.fits, chunks=chunks)
 
-    print data
+    print(data)
 
     from pprint import pprint
 
 
-    print data.hdu0.data.compute().shape
+    print(data.hdu0.data.compute().shape)
     pprint(dict(data.hdu0.attrs['fits_header']))
