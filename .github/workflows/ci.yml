@@ -71,15 +71,18 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Download distribution artifacts
-        uses: actions/download-artifact@v4
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
         with:
-          pattern: ${{ env.ARTIFACT_NAME }}-*
-          merge-multiple: true
-          path: dist
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-      - name: List artifacts
-        run: ls -lh dist
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Build distributions
+        run: poetry build
 
       - name: Publish package distributions to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -98,15 +101,15 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Download distribution artifacts
-        uses: actions/download-artifact@v4
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
         with:
-          pattern: ${{ env.ARTIFACT_NAME }}-*
-          merge-multiple: true
-          path: dist
+          poetry-version: ${{ env.POETRY_VERSION }}
 
-      - name: List artifacts
-        run: ls -lh dist
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
