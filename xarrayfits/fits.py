@@ -59,7 +59,7 @@ def slices(r):
 
 
 def _get_data_function(fp, h, i):
-    return fp.hdu_list[h].data[i]
+    return fp.hdu_list[h].section[i]
 
 
 def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
