@@ -95,10 +95,9 @@ def data_cube(tmp_path):
 
 def test_beam_creation(data_cube):
     xds = xds_from_fits(data_cube)
-    data = xds.hdu0.data.compute()
-
     cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
-    assert np.all(data.ravel() == cmp_data)
+    cmp_data = cmp_data.reshape(xds.hdu0.shape)
+    np.testing.assert_array_equal(xds.hdu0.data, cmp_data)
 
 
 if __name__ == "__main__":
