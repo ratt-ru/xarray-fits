@@ -46,7 +46,7 @@ class FitsProxy(metaclass=FitsProxyMetaClass):
         return FitsProxy(filename, **kw)
 
     @property
-    def hdu(self):
+    def hdu_list(self):
         try:
             return self._hdul
         except AttributeError:

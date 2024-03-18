@@ -137,7 +137,8 @@ def test_distributed(beam_cube):
         stack.enter_context(Client(cluster))
 
         xds = xds_from_fits(
-            beam_cube, chunks={"NAXIS1": 10, "NAXIS2": 10, "NAXIS3": 10}
+            beam_cube, chunks={"NAXIS1": 15, "NAXIS2": 100, "NAXIS3": 100}
         )
         expected = np.arange(np.prod(xds.hdu0.shape)).reshape(xds.hdu0.shape)
         np.testing.assert_array_equal(expected, xds.hdu0.data)
+        assert xds.hdu0.data.chunks == ((100, 100, 57), (100, 100, 57), (15, 15, 2))
