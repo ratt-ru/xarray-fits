@@ -130,7 +130,13 @@ def generate_slice_gets(fits_filename, fits_key, fits_graph, hdu, shape, dtype, 
 
 
 def _xarray_from_fits_hdu(
-    fits_filename, fits_key, fits_graph, name_prefix, hdu_list, hdu_index, chunks
+    fits_filename,
+    fits_key,
+    fits_graph,
+    name_prefix,
+    hdu_list,
+    hdu_index,
+    chunks,
 ):
     """
     Parameters
@@ -195,7 +201,13 @@ def _xarray_from_fits_hdu(
     flat_chunks = tuple(reversed(flat_chunks))
 
     array = generate_slice_gets(
-        fits_filename, fits_key, fits_graph, hdu_index, shape, dtype, flat_chunks
+        fits_filename,
+        fits_key,
+        fits_graph,
+        hdu_index,
+        shape,
+        dtype,
+        flat_chunks,
     )
 
     dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(0, naxis))
