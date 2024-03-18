@@ -83,21 +83,16 @@ def slices(r):
     return (slice(s, e) for s, e in zip(r[:-1], r[1:]))
 
 
-def _get_fn(fp, h, i):
-    return fp("__getitem__", h).data.__getitem__(i)
+def _get_data_function(fp, h, i):
+    return fp.hdu[h].data[i]
 
 
-def generate_slice_gets(fits_filename, fits_key, fits_graph, hdu, shape, dtype, chunks):
+def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
     """
     Parameters
     ----------
-    fits_filename : str
-        FITS filename
-    fits_key : tuple
-        dask key referencing an opened FITS file object
-    fits_graph : dict
-        dask graph containing ``fits_key`` referencing an
-        opened FITS file object
+    fits_proxy : FitsProxy
+        FITS Proxy
     hdu : integer
         FITS HDU for which to generate a dask array
     shape : tuple
@@ -114,8 +109,8 @@ def generate_slice_gets(fits_filename, fits_key, fits_graph, hdu, shape, dtype, 
         with the ``hdu``.
     """
 
-    token = dask.base.tokenize(fits_filename)
-    name = "-".join((short_fits_file(fits_filename), "slice", token))
+    token = dask.base.tokenize(fits_proxy)
+    name = "-".join((short_fits_file(fits_proxy._filename), "slice", token))
 
     dsk_chunks = da.core.normalize_chunks(chunks, shape)
 
@@ -124,15 +119,16 @@ def generate_slice_gets(fits_filename, fits_key, fits_graph, hdu, shape, dtype, 
     slices_ = product(*[slices(tuple(ranges(c))) for c in dsk_chunks])
 
     # Create dask graph
-    dsk = {key: (_get_fn, fits_key, hdu, slice_) for key, slice_ in zip(keys, slices_)}
+    dsk = {
+        key: (_get_data_function, fits_proxy, hdu, slice_)
+        for key, slice_ in zip(keys, slices_)
+    }
 
-    return da.Array({**dsk, **fits_graph}, name, dsk_chunks, dtype)
+    return da.Array(dsk, name, dsk_chunks, dtype)
 
 
-def _xarray_from_fits_hdu(
-    fits_filename,
-    fits_key,
-    fits_graph,
+def array_from_fits_hdu(
+    fits_proxy,
     name_prefix,
     hdu_list,
     hdu_index,
@@ -141,13 +137,8 @@ def _xarray_from_fits_hdu(
     """
     Parameters
     ----------
-    fits_filename : str
-        FITS filename
-    fits_key : tuple
-        dask key referencing an opened FITS file object
-    fits_graph : dict
-        dask graph containing ``fits_key`` referencing an
-        opened FITS file object
+    fits_proxy : FitsProxy
+        The FITS proxy
     hdu_list : :class:`astropy.io.fits.hdu.hdulist.HDUList`
         FITS HDU list
     hdu_index : integer
@@ -201,9 +192,7 @@ def _xarray_from_fits_hdu(
     flat_chunks = tuple(reversed(flat_chunks))
 
     array = generate_slice_gets(
-        fits_filename,
-        fits_key,
-        fits_graph,
+        fits_proxy,
         hdu_index,
         shape,
         dtype,
@@ -260,15 +249,12 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
                 f"chunks ({len(chunks)})"
             )
 
-        fits_key, fits_graph = fits_open_graph(fits_filename)
+        fits_proxy = FitsProxy(fits_filename)
 
-        fn = _xarray_from_fits_hdu
-
+        # Generate xarray datavars for each hdu
         xarrays = {
-            f"{name_prefix}{hdu_index}": fn(
-                fits_filename,
-                fits_key,
-                fits_graph,
+            f"{name_prefix}{hdu_index}": array_from_fits_hdu(
+                fits_proxy,
                 name_prefix,
                 hdu_list,
                 hdu_index,
