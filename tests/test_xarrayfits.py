@@ -3,17 +3,18 @@
 
 """Tests for `xarrayfits` package."""
 
-import os
+from contextlib import ExitStack
 
 from astropy.io import fits
+from dask.distributed import Client, LocalCluster
 import numpy as np
 import pytest
 
 from xarrayfits import xds_from_fits
 
 
-@pytest.fixture
-def beam_cube(tmp_path):
+@pytest.fixture(scope="session")
+def beam_cube(tmp_path_factory):
     frequency = np.linspace(0.856e9, 0.856e9 * 2, 32, endpoint=True)
     bandwidth_delta = (frequency[-1] - frequency[0]) / frequency.size
     dtype = np.float64
@@ -83,7 +84,8 @@ def beam_cube(tmp_path):
     ]
     header.update(ax_info)
 
-    filename = os.path.join(str(tmp_path), "beam.fits")
+    filename = tmp_path_factory.mktemp("beam") / "beam.fits"
+    filename = str(filename)
     # Write some data to it
     data = np.arange(np.prod(shape), dtype=dtype)
     primary_hdu = fits.PrimaryHDU(data.reshape(shape), header=header)
@@ -126,3 +128,16 @@ def test_beam_creation(beam_cube):
         "NAXIS2": 257,
         "NAXIS3": 257,
     }
+
+
+def test_distributed(beam_cube):
+    """Sanity check for the distributed case"""
+    with ExitStack() as stack:
+        cluster = stack.enter_context(LocalCluster(n_workers=8, processes=True))
+        stack.enter_context(Client(cluster))
+
+        xds = xds_from_fits(
+            beam_cube, chunks={"NAXIS1": 10, "NAXIS2": 10, "NAXIS3": 10}
+        )
+        expected = np.arange(np.prod(xds.hdu0.shape)).reshape(xds.hdu0.shape)
+        np.testing.assert_array_equal(expected, xds.hdu0.data)
