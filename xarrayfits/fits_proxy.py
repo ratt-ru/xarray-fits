@@ -57,5 +57,8 @@ class FitsProxy(metaclass=FitsProxyMetaClass):
                     self._hdul = fits.open(self._filename, **self._kwargs)
                     return self._hdul
 
+    def __hash__(self):
+        return hash((self._filename, tuple(set(self._kwargs.items()))))
+
     def __reduce__(self):
         return (FitsProxy.from_reduce_args, (self._filename, self._kwargs))

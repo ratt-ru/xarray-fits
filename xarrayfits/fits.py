@@ -2,7 +2,7 @@
 
 """Main module."""
 
-from functools import partial, reduce
+from functools import reduce
 from itertools import product
 import logging
 import os
@@ -36,32 +36,6 @@ def short_fits_file(table_name):
 
     """
     return os.path.split(table_name.rstrip(os.sep))[1]
-
-
-def fits_open_graph(fits_file, **kwargs):
-    """
-    Generate a dask graph containing fits open commands
-
-    Parameters
-    ----------
-    fits_file : str
-        FITS filename
-    **kwargs (optional) :
-        Keywords arguments passed to the :meth:`astropy.io.fits.open`
-        command.`
-
-    Returns
-    -------
-    tuple
-        Graph key associated with the opened file
-    dict
-        Dask graph containing the graph open command
-
-    """
-    token = dask.base.tokenize(fits_file, kwargs)
-    fits_key = ("open", short_fits_file(fits_file), token)
-    fits_graph = {fits_key: (partial(FitsProxy, **kwargs), fits_file)}
-    return fits_key, fits_graph
 
 
 BITPIX_MAP = {
@@ -109,9 +83,8 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
         with the ``hdu``.
     """
 
-    token = dask.base.tokenize(fits_proxy)
+    token = dask.base.tokenize(fits_proxy, hdu, dtype)
     name = "-".join((short_fits_file(fits_proxy._filename), "slice", token))
-
     dsk_chunks = da.core.normalize_chunks(chunks, shape)
 
     # Produce keys and slices

@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Improve dask array name determinism (:pr:`10`)
 * Change license from GPL3 to BSD3 (:pr:`9``)
 * Correct FITS Proxy Usage (:pr:`8`)
 * Update ruff settings (:pr:`7`)
