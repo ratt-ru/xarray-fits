@@ -55,7 +55,7 @@ jobs:
       - name: Install xarray-fits
         run: poetry install --extras "testing"
 
-      - name: Test dask-ms base
+      - name: Test xarray-fits
         run: poetry run py.test -s -vvv tests/
 
       # - name: Debug with tmate on failure
