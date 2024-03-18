@@ -4,7 +4,8 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
-* Modernise xarray-fits
+* Update Github Actions Deployment (:pr:`6`)
+* Modernise xarray-fits (:pr:`5`)
 
 0.1.0 (2018-02-19)
 ------------------
