@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Use fits section to selection portions of a FITS file on remote data (:pr:`13`)
 * Add a weakref.finalize method to close HDUList objects on FitsProxy instances (:pr:`12`)
 * Depend on fsspec (:pr:`11`)
 * Improve dask array name determinism (:pr:`10`)
