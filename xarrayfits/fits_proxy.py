@@ -1,7 +1,28 @@
+from threading import Lock
+import weakref
+
 from astropy.io import fits
 
+TABLE_CACHE_LOCK = Lock()
+TABLE_CACHE = weakref.WeakValueDictionary()
 
-class FitsProxy(object):
+
+class FitsProxyMetaClass(type):
+    """https://en.wikipedia.org/wiki/Multiton_pattern"""
+
+    def __call__(cls, *args, **kwargs):
+        key = (cls,) + args + tuple(set(kwargs.items()))
+
+        with TABLE_CACHE_LOCK:
+            try:
+                return TABLE_CACHE[key]
+            except KeyError:
+                instance = type.__call__(cls, *args, **kwargs)
+                TABLE_CACHE[key] = instance
+                return instance
+
+
+class FitsProxy(metaclass=FitsProxyMetaClass):
     """
     Picklable object proxying a :class:`astropy.io.fits` class
     """
@@ -18,13 +39,23 @@ class FitsProxy(object):
         """
         self._filename = filename
         self._kwargs = kwargs
-        self._fits_file = fits.open(filename, **kwargs)
+        self._lock = Lock()
 
-    def __setstate__(self, state):
-        self.__init__(*state)
+    @staticmethod
+    def from_reduce_args(filename, kw):
+        return FitsProxy(filename, **kw)
 
-    def __getstate__(self):
-        return (self._filename, self._kwargs)
+    @property
+    def hdu(self):
+        try:
+            return self._hdul
+        except AttributeError:
+            with self._lock:
+                try:
+                    return self._hdul
+                except AttributeError:
+                    self._hdul = fits.open(self._filename, **self._kwargs)
+                    return self._hdul
 
-    def __call__(self, fn, *args, **kwargs):
-        return getattr(self._fits_file, fn)(*args, **kwargs)
+    def __reduce__(self):
+        return (FitsProxy.from_reduce_args, (self._filename, self._kwargs))
