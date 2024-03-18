@@ -54,8 +54,9 @@ class FitsProxy(metaclass=FitsProxyMetaClass):
                 try:
                     return self._hdul
                 except AttributeError:
-                    self._hdul = fits.open(self._filename, **self._kwargs)
-                    return self._hdul
+                    self._hdul = hdul = fits.open(self._filename, **self._kwargs)
+                    weakref.finalize(self, hdul.close)
+                    return hdul
 
     def __hash__(self):
         return hash((self._filename, tuple(set(self._kwargs.items()))))
