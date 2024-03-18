@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Add a weakref.finalize method to close HDUList objects on FitsProxy instances (:pr:`12`)
 * Depend on fsspec (:pr:`11`)
 * Improve dask array name determinism (:pr:`10`)
 * Change license from GPL3 to BSD3 (:pr:`9``)
