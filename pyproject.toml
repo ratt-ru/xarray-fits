@@ -16,6 +16,10 @@ pytest = {version = "^8.1.1", optional = true, extras = ["testing"]}
 [tool.poetry.extras]
 testing = ["pytest"]
 
+[tool.poetry.group.dev.dependencies]
+tbump = "^6.9.0"
+pre-commit = "^2.20.0"
+ruff = "^0.1.3"
 
 [build-system]
 requires = ["poetry-core"]
