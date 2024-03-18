@@ -13,7 +13,7 @@ from xarrayfits import xds_from_fits
 
 
 @pytest.fixture
-def data_cube(tmp_path):
+def beam_cube(tmp_path):
     frequency = np.linspace(0.856e9, 0.856e9 * 2, 32, endpoint=True)
     bandwidth_delta = (frequency[-1] - frequency[0]) / frequency.size
     dtype = np.float64
@@ -68,17 +68,16 @@ def data_cube(tmp_path):
     ]
 
     # Create header and set metadata
-    header = fits.Header()
-    header.update(metadata)
+    header = fits.Header(metadata)
 
-    shape = tuple(
-        reversed([nax[1][0] for _, _, nax, _, _, _ in axes if nax[1] is not None])
-    )
+    shape = tuple(v[0] for _, _, (_, v), _, _, _ in axes if v is not None)
 
     # Now set the key value entries for each axis
+    # Note that the axes are reversed, compared
+    # to the numpy shape
     ax_info = [
-        ("%s%d" % (k, a),) + vt
-        for a, axis_data in enumerate(axes, 1)
+        (f"{k}{a}",) + vt
+        for a, axis_data in enumerate(reversed(axes), 1)
         for k, vt in axis_data
         if vt is not None
     ]
@@ -93,35 +92,36 @@ def data_cube(tmp_path):
     yield filename
 
 
-def test_beam_creation(data_cube):
-    xds = xds_from_fits(data_cube)
+def test_beam_creation(beam_cube):
+    xds = xds_from_fits(beam_cube)
     cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
     cmp_data = cmp_data.reshape(xds.hdu0.shape)
     np.testing.assert_array_equal(xds.hdu0.data, cmp_data)
+    assert xds.hdu0.data.shape == (257, 257, 32)
     assert xds.hdu0.attrs == {
-        "CTYPE3": "FREQ",
-        "ORIGIN": "Artificial",
-        "NAXIS3": 32,
-        "CUNIT1": "DEG",
-        "CRPIX3": 1,
-        "NAXIS2": 257,
-        "CDELT1": 0.011082,
-        "OBSERVER": "Observer",
-        "CDELT2": 0.011082,
-        "SIMPLE": True,
-        "CTYPE2": "Y",
-        "CUNIT2": "DEG",
-        "CDELT3": 26750000.0,
-        "CRVAL1": 0.0110828777007,
-        "CRVAL2": -2.14349358381e-07,
-        "EQUINOX": 2000.0,
         "BITPIX": -64,
-        "NAXIS": 3,
-        "CRPIX1": 129,
-        "CRPIX2": 129,
-        "CTYPE1": "X",
-        "TELESCOP": "Telescope",
+        "EQUINOX": 2000.0,
         "OBJECT": "beam",
-        "CRVAL3": 856000000.0,
-        "NAXIS1": 257,
+        "OBSERVER": "Observer",
+        "ORIGIN": "Artificial",
+        "SIMPLE": True,
+        "TELESCOP": "Telescope",
+        "CDELT1": 26750000.0,
+        "CDELT2": 0.011082,
+        "CDELT3": 0.011082,
+        "CRPIX1": 1,
+        "CRPIX2": 129,
+        "CRPIX3": 129,
+        "CRVAL1": 856000000.0,
+        "CRVAL2": -2.14349358381e-07,
+        "CRVAL3": 0.0110828777007,
+        "CTYPE1": "FREQ",
+        "CTYPE2": "Y",
+        "CTYPE3": "X",
+        "CUNIT2": "DEG",
+        "CUNIT3": "DEG",
+        "NAXIS": 3,
+        "NAXIS1": 32,
+        "NAXIS2": 257,
+        "NAXIS3": 257,
     }
