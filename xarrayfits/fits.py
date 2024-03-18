@@ -11,6 +11,7 @@ import os.path
 from astropy.io import fits
 import dask
 import dask.array as da
+import fsspec
 import numpy as np
 
 import xarray as xr
@@ -58,7 +59,7 @@ def slices(r):
 
 
 def _get_data_function(fp, h, i):
-    return fp.hdu[h].data[i]
+    return fp.hdu_list[h].data[i]
 
 
 def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
@@ -160,16 +161,13 @@ def array_from_fits_hdu(
             # Otherwise do single slices of some row major axes
             flat_chunks.append(1 if i > 2 else s)
 
-    # Reverse to get C major ordering
-    shape = tuple(reversed(shape))
-    flat_chunks = tuple(reversed(flat_chunks))
-
     array = generate_slice_gets(
         fits_proxy,
         hdu_index,
-        shape,
+        # Reverse to get C major ordering
+        tuple(reversed(shape)),
         dtype,
-        flat_chunks,
+        tuple(reversed(flat_chunks)),
     )
 
     dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(0, naxis))
@@ -200,40 +198,40 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
         xarray Dataset containing DataArray's representing the
         specified HDUs on the FITS file.
     """
+    fits_proxy = FitsProxy(fits_filename, use_fsspec=True)
 
-    with fits.open(fits_filename) as hdu_list:
-        # Take all hdus if None specified
-        if hdus is None:
-            hdus = list(range(len(hdu_list)))
-        # promote to list in case of single integer
-        elif isinstance(hdus, int):
-            hdus = [hdus]
+    # Take all hdus if None specified
+    if hdus is None:
+        hdus = list(range(len(fits_proxy.hdu_list)))
+    # promote to list in case of single integer
+    elif isinstance(hdus, int):
+        hdus = [hdus]
 
-        if chunks is None:
-            chunks = [{} for h in hdus]
-        # Promote to list in case of single dict
-        elif isinstance(chunks, dict):
-            chunks = [chunks]
+    if chunks is None:
+        chunks = [{} for _ in hdus]
+    # Promote to list in case of single dict
+    elif isinstance(chunks, dict):
+        chunks = [chunks]
 
-        if not len(hdus) == len(chunks):
-            raise ValueError(
-                f"Number of requested hdus ({len(hdus)}) "
-                f"does not match the number of "
-                f"chunks ({len(chunks)})"
-            )
+    if not len(hdus) == len(chunks):
+        raise ValueError(
+            f"Number of requested hdus ({len(hdus)}) "
+            f"does not match the number of "
+            f"chunks ({len(chunks)})"
+        )
 
-        fits_proxy = FitsProxy(fits_filename)
+    fits_proxy = FitsProxy(fits_filename)
 
-        # Generate xarray datavars for each hdu
-        xarrays = {
-            f"{name_prefix}{hdu_index}": array_from_fits_hdu(
-                fits_proxy,
-                name_prefix,
-                hdu_list,
-                hdu_index,
-                hdu_chunks,
-            )
-            for hdu_index, hdu_chunks in zip(hdus, chunks)
-        }
+    # Generate xarray datavars for each hdu
+    xarrays = {
+        f"{name_prefix}{hdu_index}": array_from_fits_hdu(
+            fits_proxy,
+            name_prefix,
+            fits_proxy.hdu_list,
+            hdu_index,
+            hdu_chunks,
+        )
+        for hdu_index, hdu_chunks in zip(hdus, chunks)
+    }
 
-        return xr.Dataset(xarrays)
+    return xr.Dataset(xarrays)

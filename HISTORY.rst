@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Depend on fsspec (:pr:`11`)
 * Improve dask array name determinism (:pr:`10`)
 * Change license from GPL3 to BSD3 (:pr:`9``)
 * Correct FITS Proxy Usage (:pr:`8`)
