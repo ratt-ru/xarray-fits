@@ -59,7 +59,7 @@ def fits_open_graph(fits_file, **kwargs):
 
     """
     token = dask.base.tokenize(fits_file, kwargs)
-    fits_key = ('open', short_fits_file(fits_file), token)
+    fits_key = ("open", short_fits_file(fits_file), token)
     fits_graph = {fits_key: (partial(FitsProxy, **kwargs), fits_file)}
     return fits_key, fits_graph
 
@@ -87,8 +87,7 @@ def _get_fn(fp, h, i):
     return fp("__getitem__", h).data.__getitem__(i)
 
 
-def generate_slice_gets(fits_filename, fits_key, fits_graph,
-                        hdu, shape, dtype, chunks):
+def generate_slice_gets(fits_filename, fits_key, fits_graph, hdu, shape, dtype, chunks):
     """
     Parameters
     ----------
@@ -125,14 +124,14 @@ def generate_slice_gets(fits_filename, fits_key, fits_graph,
     slices_ = product(*[slices(tuple(ranges(c))) for c in dsk_chunks])
 
     # Create dask graph
-    dsk = {key: (_get_fn, fits_key, hdu, slice_)
-           for key, slice_ in zip(keys, slices_)}
+    dsk = {key: (_get_fn, fits_key, hdu, slice_) for key, slice_ in zip(keys, slices_)}
 
     return da.Array({**dsk, **fits_graph}, name, dsk_chunks, dtype)
 
 
-def _xarray_from_fits_hdu(fits_filename, fits_key, fits_graph,
-                          name_prefix, hdu_list, hdu_index, chunks):
+def _xarray_from_fits_hdu(
+    fits_filename, fits_key, fits_graph, name_prefix, hdu_list, hdu_index, chunks
+):
     """
     Parameters
     ----------
@@ -160,19 +159,20 @@ def _xarray_from_fits_hdu(fits_filename, fits_key, fits_graph,
     except IndexError as e:
         raise IndexError(f"Invalid hdu {hdu_index}") from e
 
-    naxis = hdu.header['NAXIS']
-    bitpix = hdu.header['BITPIX']
-    simple = hdu.header['SIMPLE']
+    naxis = hdu.header["NAXIS"]
+    bitpix = hdu.header["BITPIX"]
+    simple = hdu.header["SIMPLE"]
 
     if simple is False:
-        raise ValueError(f"Non-fits conforming hdu {hdu} "
-                         f"header['SIMPLE']={simple}")
+        raise ValueError(f"Non-fits conforming hdu {hdu} " f"header['SIMPLE']={simple}")
 
     try:
         dtype = INV_BITPIX_MAP[bitpix]
     except KeyError:
-        raise ValueError(f"Couldn't find a numpy type associated "
-                         f"with BITPIX {bitpix}. Ignoring hdu {hdu_index}")
+        raise ValueError(
+            f"Couldn't find a numpy type associated "
+            f"with BITPIX {bitpix}. Ignoring hdu {hdu_index}"
+        )
 
     shape = []
     flat_chunks = []
@@ -194,8 +194,9 @@ def _xarray_from_fits_hdu(fits_filename, fits_key, fits_graph,
     shape = tuple(reversed(shape))
     flat_chunks = tuple(reversed(flat_chunks))
 
-    array = generate_slice_gets(fits_filename, fits_key, fits_graph,
-                                hdu_index, shape, dtype, flat_chunks)
+    array = generate_slice_gets(
+        fits_filename, fits_key, fits_graph, hdu_index, shape, dtype, flat_chunks
+    )
 
     dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(naxis, 0, -1))
     attrs = {"fits_header": {(k, v) for k, v in list(hdu.header.items())}}
@@ -241,18 +242,27 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
             chunks = [chunks]
 
         if not len(hdus) == len(chunks):
-            raise ValueError(f"Number of requested hdus ({len(hdus)}) "
-                             f"does not match the number of "
-                             f"chunks ({len(chunks)})")
+            raise ValueError(
+                f"Number of requested hdus ({len(hdus)}) "
+                f"does not match the number of "
+                f"chunks ({len(chunks)})"
+            )
 
         fits_key, fits_graph = fits_open_graph(fits_filename)
 
         fn = _xarray_from_fits_hdu
 
-        xarrays = {f"{name_prefix}{hdu_index}": fn(fits_filename,
-                                                   fits_key, fits_graph,
-                                                   name_prefix, hdu_list,
-                                                   hdu_index, hdu_chunks)
-                   for hdu_index, hdu_chunks in zip(hdus, chunks)}
+        xarrays = {
+            f"{name_prefix}{hdu_index}": fn(
+                fits_filename,
+                fits_key,
+                fits_graph,
+                name_prefix,
+                hdu_list,
+                hdu_index,
+                hdu_chunks,
+            )
+            for hdu_index, hdu_chunks in zip(hdus, chunks)
+        }
 
         return xr.Dataset(xarrays)
