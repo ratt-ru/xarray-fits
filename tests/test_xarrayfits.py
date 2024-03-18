@@ -98,21 +98,30 @@ def test_beam_creation(data_cube):
     cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
     cmp_data = cmp_data.reshape(xds.hdu0.shape)
     np.testing.assert_array_equal(xds.hdu0.data, cmp_data)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    p = argparse.ArgumentParser()
-    p.add_argument("fits")
-    args = p.parse_args()
-
-    chunks = {"NAXIS1": 513, "NAXIS2": 513, "NAXIS3": 1}
-    data = xds_from_fits(args.fits, chunks=chunks)
-
-    print(data)
-
-    from pprint import pprint
-
-    print(data.hdu0.data.compute().shape)
-    pprint(dict(data.hdu0.attrs["fits_header"]))
+    assert xds.hdu0.attrs == {
+        "CTYPE3": "FREQ",
+        "ORIGIN": "Artificial",
+        "NAXIS3": 32,
+        "CUNIT1": "DEG",
+        "CRPIX3": 1,
+        "NAXIS2": 257,
+        "CDELT1": 0.011082,
+        "OBSERVER": "Observer",
+        "CDELT2": 0.011082,
+        "SIMPLE": True,
+        "CTYPE2": "Y",
+        "CUNIT2": "DEG",
+        "CDELT3": 26750000.0,
+        "CRVAL1": 0.0110828777007,
+        "CRVAL2": -2.14349358381e-07,
+        "EQUINOX": 2000.0,
+        "BITPIX": -64,
+        "NAXIS": 3,
+        "CRPIX1": 129,
+        "CRPIX2": 129,
+        "CTYPE1": "X",
+        "TELESCOP": "Telescope",
+        "OBJECT": "beam",
+        "CRVAL3": 856000000.0,
+        "NAXIS1": 257,
+    }

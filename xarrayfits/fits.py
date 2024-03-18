@@ -199,7 +199,7 @@ def _xarray_from_fits_hdu(
     )
 
     dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(naxis, 0, -1))
-    attrs = {"fits_header": {(k, v) for k, v in list(hdu.header.items())}}
+    attrs = {(k, v) for k, v in sorted(hdu.header.items())}
     return xr.DataArray(array, dims=dims, attrs=attrs)
 
 
