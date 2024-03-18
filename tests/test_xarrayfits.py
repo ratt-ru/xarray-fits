@@ -4,7 +4,6 @@
 """Tests for `xarrayfits` package."""
 
 import os
-from tempfile import NamedTemporaryFile
 
 from astropy.io import fits
 import numpy as np
@@ -13,7 +12,7 @@ import pytest
 from xarrayfits import xds_from_fits
 
 @pytest.fixture
-def data_cube():
+def data_cube(tmp_path):
     frequency = np.linspace(.856e9, .856e9*2, 32, endpoint=True)
     bandwidth_delta = (frequency[-1] - frequency[0]) / frequency.size
     dtype = np.float64
@@ -78,26 +77,19 @@ def data_cube():
         if vt is not None]
     header.update(ax_info)
 
-    try:
-        # Create a temporary file
-        f = NamedTemporaryFile(delete=False)
-        f.close()
+    filename = os.path.join(str(tmp_path), "beam.fits")
+    # Write some data to it
+    data = np.arange(np.prod(shape), dtype=dtype)
+    primary_hdu = fits.PrimaryHDU(data.reshape(shape), header=header)
+    primary_hdu.writeto(filename, overwrite=True)
 
-        # Write some data to it
-        data = np.arange(np.product(shape), dtype=dtype)
-        primary_hdu = fits.PrimaryHDU(data.reshape(shape), header=header)
-        primary_hdu.writeto(f.name, overwrite=True)
-
-        yield f.name
-    finally:
-        # Delete temporary file
-        os.unlink(f.name)
+    yield filename
 
 def test_beam_creation(data_cube):
     xds = xds_from_fits(data_cube)
     data = xds.hdu0.data.compute()
 
-    cmp_data = np.arange(np.product(xds.hdu0.shape), dtype=np.float64)
+    cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
     assert np.all(data.ravel() == cmp_data)
 
 if __name__ == "__main__":

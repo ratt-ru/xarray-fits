@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "xarray-fits"
+version = "0.1.2"
+description = "xarray Datasets for FITS-like data"
+authors = ["Simon Perkins <simon.perkins@gmail.com>"]
+packages = [{include = "xarrayfits"}]
+readme = "README.rst"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+astropy = "^6.0.0"
+dask = {extras = ["array"], version = "^2024.3.1"}
+xarray = "^2024.2.0"
+pytest = {version = "^8.1.1", optional = true, extras = ["testing"]}
+
+[tool.poetry.extras]
+testing = ["pytest"]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
