@@ -21,6 +21,22 @@ tbump = "^6.9.0"
 pre-commit = "^2.20.0"
 ruff = "^0.1.3"
 
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+select = [
+    # flake8-builtins
+    "A",
+    # flake8-bugbear
+    "B",
+    # isort
+    "I001",
+    "I002",
+    # tidy imports
+    "TID"
+]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
