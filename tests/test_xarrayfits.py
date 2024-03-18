@@ -98,6 +98,7 @@ def test_beam_creation(beam_cube):
     cmp_data = cmp_data.reshape(xds.hdu0.shape)
     np.testing.assert_array_equal(xds.hdu0.data, cmp_data)
     assert xds.hdu0.data.shape == (257, 257, 32)
+    assert xds.hdu0.dims == ("hdu0-0", "hdu0-1", "hdu0-2")
     assert xds.hdu0.attrs == {
         "BITPIX": -64,
         "EQUINOX": 2000.0,

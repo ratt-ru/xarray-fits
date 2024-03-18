@@ -198,7 +198,7 @@ def _xarray_from_fits_hdu(
         fits_filename, fits_key, fits_graph, hdu_index, shape, dtype, flat_chunks
     )
 
-    dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(naxis, 0, -1))
+    dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(0, naxis))
     attrs = {(k, v) for k, v in sorted(hdu.header.items())}
     return xr.DataArray(array, dims=dims, attrs=attrs)
 
