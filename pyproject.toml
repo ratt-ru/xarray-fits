@@ -16,7 +16,7 @@ distributed = {version = "^2024.3.1", optional = true, extras = ["testing"]}
 fsspec = "^2024.3.0"
 
 [tool.poetry.extras]
-testing = ["pytest"]
+testing = ["distributed", "pytest"]
 
 [tool.poetry.group.dev.dependencies]
 tbump = "^6.9.0"
