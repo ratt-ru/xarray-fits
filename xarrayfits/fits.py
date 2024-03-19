@@ -180,7 +180,7 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
     Parameters
     ----------
     fits_filename : str
-        FITS filename
+        FITS filename. This can contain a globbed pattern.
     hdus : integer or list of integers, optional
         hdus to represent on the returned Dataset.
         If ``None``, all HDUs are selected
@@ -194,44 +194,51 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
 
     Returns
     -------
-    :class:`xarray.Dataset`
-        xarray Dataset containing DataArray's representing the
-        specified HDUs on the FITS file.
+    list of :class:`xarray.Dataset`
+        A list of xarray Datasets corresponding to glob matches
+        in the ``fits_filename`` parameter.
+        Each Dataset contains the DataArray's corresponding
+        to each HDU on the FITS file.
     """
-    fits_proxy = FitsProxy(fits_filename, use_fsspec=True)
 
-    # Take all hdus if None specified
-    if hdus is None:
-        hdus = list(range(len(fits_proxy.hdu_list)))
-    # promote to list in case of single integer
-    elif isinstance(hdus, int):
-        hdus = [hdus]
+    openfiles = fsspec.open_files(fits_filename)
+    datasets = []
 
-    if chunks is None:
-        chunks = [{} for _ in hdus]
-    # Promote to list in case of single dict
-    elif isinstance(chunks, dict):
-        chunks = [chunks]
+    for filename in (f.path for f in openfiles):
+        fits_proxy = FitsProxy(filename, use_fsspec=True)
 
-    if not len(hdus) == len(chunks):
-        raise ValueError(
-            f"Number of requested hdus ({len(hdus)}) "
-            f"does not match the number of "
-            f"chunks ({len(chunks)})"
-        )
+        # Take all hdus if None specified
+        if hdus is None:
+            hdus = list(range(len(fits_proxy.hdu_list)))
+        # promote to list in case of single integer
+        elif isinstance(hdus, int):
+            hdus = [hdus]
 
-    fits_proxy = FitsProxy(fits_filename)
+        if chunks is None:
+            chunks = [{} for _ in hdus]
+        # Promote to list in case of single dict
+        elif isinstance(chunks, dict):
+            chunks = [chunks]
 
-    # Generate xarray datavars for each hdu
-    xarrays = {
-        f"{name_prefix}{hdu_index}": array_from_fits_hdu(
-            fits_proxy,
-            name_prefix,
-            fits_proxy.hdu_list,
-            hdu_index,
-            hdu_chunks,
-        )
-        for hdu_index, hdu_chunks in zip(hdus, chunks)
-    }
+        if not len(hdus) == len(chunks):
+            raise ValueError(
+                f"Number of requested hdus ({len(hdus)}) "
+                f"does not match the number of "
+                f"chunks ({len(chunks)})"
+            )
 
-    return xr.Dataset(xarrays)
+        # Generate xarray datavars for each hdu
+        xarrays = {
+            f"{name_prefix}{hdu_index}": array_from_fits_hdu(
+                fits_proxy,
+                name_prefix,
+                fits_proxy.hdu_list,
+                hdu_index,
+                hdu_chunks,
+            )
+            for hdu_index, hdu_chunks in zip(hdus, chunks)
+        }
+
+        datasets.append(xr.Dataset(xarrays))
+
+    return datasets
