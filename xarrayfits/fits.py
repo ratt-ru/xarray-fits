@@ -57,8 +57,9 @@ def slices(r):
     return (slice(s, e) for s, e in zip(r[:-1], r[1:]))
 
 
-def _get_data_function(fp, h, i):
-    return fp.hdu_list[h].section[i]
+def _get_data_function(fp, h, i, dt):
+    data = fp.hdu_list[h].section[i]
+    return data.astype(dt.newbyteorder("="))
 
 
 def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
@@ -90,10 +91,11 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
     # Produce keys and slices
     keys = product([name], *[list(range(len(bd))) for bd in dsk_chunks])
     slices_ = product(*[slices(tuple(ranges(c))) for c in dsk_chunks])
+    dt = np.dtype(dtype)
 
     # Create dask graph
     dsk = {
-        key: (_get_data_function, fits_proxy, hdu, slice_)
+        key: (_get_data_function, fits_proxy, hdu, slice_, dt)
         for key, slice_ in zip(keys, slices_)
     }
 
