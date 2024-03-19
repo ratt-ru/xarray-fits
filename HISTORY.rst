@@ -2,6 +2,10 @@
 History
 =======
 
+X.Y.Z (YYYY-MM-DD)
+------------------
+* Test stacking in the globbing case (:pr:`20`)
+
 0.2.1 (2024-03-19)
 ------------------
 * Make distributed an optional package (:pr:`19`)
