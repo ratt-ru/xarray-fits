@@ -2,28 +2,53 @@
 xarray-fits
 ===========
 
+Given some FITS files with matching HDUs:
 
-.. image:: https://img.shields.io/pypi/v/xarray-fits.svg
-        :target: https://pypi.python.org/pypi/xarray-fits
+.. code-block:: bash
 
-.. image:: https://img.shields.io/travis/ska-sa/xarray-fits.svg
-        :target: https://travis-ci.org/ska-sa/xarray-fits
+  $ tree data
+  /home/user/data
+  ├── data-0.fits
+  ├── data-1.fits
+  └── data-2.fits
 
-.. image:: https://readthedocs.org/projects/xarray-fits/badge/?version=latest
-        :target: https://xarray-fits.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
+  0 directories, 3 files
 
+.. code-block:: python
 
-.. image:: https://pyup.io/repos/github/ska-sa/xarray-fits/shield.svg
-     :target: https://pyup.io/repos/github/ska-sa/xarray-fits/
-     :alt: Updates
+  >>> from xarrayfits import xds_from_fits
+  >>> datasets = xds_from_fits("/home/user/data*", prefix="data")
 
+The above returns a list of three xarray Datasets
 
+.. code-block:: python
 
-xarray Datasets interacting with FITS files
+  >>> datasets
+  [<xarray.Dataset> Size: 800B
+   Dimensions:  (data0-0: 10, data0-1: 10)
+   Dimensions without coordinates: data0-0, data0-1
+   Data variables:
+       data0    (data0-0, data0-1) float64 800B dask.array<chunksize=(10, 10), meta=np.ndarray>,
+   <xarray.Dataset> Size: 800B
+   Dimensions:  (data0-0: 10, data0-1: 10)
+   Dimensions without coordinates: data0-0, data0-1
+   Data variables:
+       data0    (data0-0, data0-1) float64 800B dask.array<chunksize=(10, 10), meta=np.ndarray>,
+   <xarray.Dataset> Size: 800B
+   Dimensions:  (data0-0: 10, data0-1: 10)
+   Dimensions without coordinates: data0-0, data0-1
+   Data variables:
+       data0    (data0-0, data0-1) float64 800B dask.array<chunksize=(10, 10), meta=np.ndarray>]
 
+Using xarray these can be concatenated along a dimension:
 
-Documentation
--------------
+  .. code-block:: python
 
-https://xarray-fits.readthedocs.io.
+  >>> import xarray
+  >>> ds = xarray.concat(datasets, dim="data0-0")
+  >>> ds
+  <xarray.Dataset> Size: 2kB
+  Dimensions:  (data0-0: 30, data0-1: 10)
+  Dimensions without coordinates: data0-0, data0-1
+  Data variables:
+      data0    (data0-0, data0-1) float64 2kB dask.array<chunksize=(10, 10), meta=np.ndarray>
