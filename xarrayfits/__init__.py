@@ -3,7 +3,7 @@
 """Top-level package for xarray-fits."""
 
 __author__ = """Simon Perkins"""
-__email__ = "sperkins@ska.ac.za"
+__email__ = "simon.perkins@gmail.com"
 __version__ = "0.1.2"
 
 import logging
