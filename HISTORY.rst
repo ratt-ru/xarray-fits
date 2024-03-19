@@ -2,7 +2,7 @@
 History
 =======
 
-X.Y.Z (YYYY-MM-DD)
+0.2.1 (2024-03-19)
 ------------------
 * Make distributed an optional package (:pr:`19`)
 
