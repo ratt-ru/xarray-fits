@@ -47,6 +47,10 @@ def test_globbing(multiple_files):
         combined.hdu0.data, np.concatenate([expected] * 3, axis=1)
     )
 
+    tds = [ds.expand_dims(dim="time", axis=0) for ds in datasets]
+    combined = xarray.concat(tds, dim="time")
+    np.testing.assert_array_equal(combined.hdu0.data, np.stack([expected] * 3, axis=0))
+
 
 @pytest.fixture(scope="session")
 def beam_cube(tmp_path_factory):
