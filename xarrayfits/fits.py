@@ -8,7 +8,6 @@ import logging
 import os
 import os.path
 
-from astropy.io import fits
 import dask
 import dask.array as da
 import fsspec
