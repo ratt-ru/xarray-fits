@@ -2,8 +2,9 @@
 History
 =======
 
-X.Y.Z (YYYY-MM-DD)
+0.2.0 (2024-03-19)
 ------------------
+* Update README (:pr:`18`)
 * Convert from FITS big-endian to machine native (:pr:`17`)
 * Test name prefix specification (:pr:`16`)
 * Support globbing (:pr:`15`)
