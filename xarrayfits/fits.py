@@ -180,7 +180,7 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
     Parameters
     ----------
     fits_filename : str
-        FITS filename
+        FITS filename. This can contain a globbed pattern.
     hdus : integer or list of integers, optional
         hdus to represent on the returned Dataset.
         If ``None``, all HDUs are selected
@@ -195,8 +195,10 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
     Returns
     -------
     list of :class:`xarray.Dataset`
-        xarray Datasets containing DataArray's representing the
-        specified HDUs on the FITS file.
+        A list of xarray Datasets corresponding to glob matches
+        in the ``fits_filename`` parameter.
+        Each Dataset contains the DataArray's corresponding
+        to each HDU on the FITS file.
     """
 
     openfiles = fsspec.open_files(fits_filename)
