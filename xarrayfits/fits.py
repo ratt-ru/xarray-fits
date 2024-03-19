@@ -135,7 +135,9 @@ def array_from_fits_hdu(
     simple = hdu.header["SIMPLE"]
 
     if simple is False:
-        raise ValueError(f"Non-fits conforming hdu {hdu} " f"header['SIMPLE']={simple}")
+        raise ValueError(
+            f"HDU {hdu} doesn't conform " f"to the FITS standard: " f"SIMPLE={simple}"
+        )
 
     try:
         dtype = INV_BITPIX_MAP[bitpix]
@@ -149,25 +151,23 @@ def array_from_fits_hdu(
     flat_chunks = []
 
     # At this point we are dealing with FORTRAN ordered axes
-    for i in range(1, naxis + 1):
-        ax_key = f"NAXIS{i}"
-        s = hdu.header[ax_key]
-        shape.append(s)
+    for i in range(naxis):
+        ax_key = f"NAXIS{naxis - i}"
+        ax_shape = hdu.header[ax_key]
+        shape.append(ax_shape)
 
         try:
             # Try add existing chunking strategies to the list
-            flat_chunks.append(chunks[ax_key])
+            flat_chunks.append(chunks[i])
         except KeyError:
-            # Otherwise do single slices of some row major axes
-            flat_chunks.append(1 if i > 2 else s)
+            flat_chunks.append(ax_shape)
 
     array = generate_slice_gets(
         fits_proxy,
         hdu_index,
-        # Reverse to get C major ordering
-        tuple(reversed(shape)),
+        tuple(shape),
         dtype,
-        tuple(reversed(flat_chunks)),
+        tuple(flat_chunks),
     )
 
     dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(0, naxis))
@@ -189,8 +189,8 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
     chunks : dictionary or list of dictionaries, optional
         Chunking strategy for each dimension of each hdu.
         Dimensions should be specified via the
-        standard FITS dimensions
-        :code:`{'NAXIS1' : 513, 'NAXIS2' : 513, 'NAXIS3' : 33}`
+        C order dimensions
+        :code:`{0: 513, 1: 513, 2: 33}`
 
     Returns
     -------
