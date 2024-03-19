@@ -8,6 +8,7 @@ from contextlib import ExitStack
 from astropy.io import fits
 from dask.distributed import Client, LocalCluster
 import numpy as np
+from numpy.testing import assert_array_equal
 import pytest
 import xarray
 
@@ -36,20 +37,20 @@ def test_globbing(multiple_files):
     for xds in datasets:
         expected = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
         expected = expected.reshape(xds.hdu0.shape)
-        np.testing.assert_array_equal(xds.hdu0.data, expected)
+        assert_array_equal(xds.hdu0.data, expected)
 
     combined = xarray.concat(datasets, dim="hdu0-0")
-    np.testing.assert_array_equal(
-        combined.hdu0.data, np.concatenate([expected] * 3, axis=0)
-    )
+    assert_array_equal(combined.hdu0.data, np.concatenate([expected] * 3, axis=0))
+    assert combined.hdu0.dims == ("hdu0-0", "hdu0-1")
+
     combined = xarray.concat(datasets, dim="hdu0-1")
-    np.testing.assert_array_equal(
-        combined.hdu0.data, np.concatenate([expected] * 3, axis=1)
-    )
+    assert_array_equal(combined.hdu0.data, np.concatenate([expected] * 3, axis=1))
+    assert combined.hdu0.dims == ("hdu0-0", "hdu0-1")
 
     tds = [ds.expand_dims(dim="time", axis=0) for ds in datasets]
     combined = xarray.concat(tds, dim="time")
-    np.testing.assert_array_equal(combined.hdu0.data, np.stack([expected] * 3, axis=0))
+    assert_array_equal(combined.hdu0.data, np.stack([expected] * 3, axis=0))
+    assert combined.hdu0.dims == ("time", "hdu0-0", "hdu0-1")
 
 
 @pytest.fixture(scope="session")
@@ -143,7 +144,7 @@ def test_beam_creation(beam_cube):
     (xds,) = xds_from_fits(beam_cube)
     cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
     cmp_data = cmp_data.reshape(xds.hdu0.shape)
-    np.testing.assert_array_equal(xds.hdu0.data, cmp_data)
+    assert_array_equal(xds.hdu0.data, cmp_data)
     assert xds.hdu0.data.shape == (257, 257, 32)
     assert xds.hdu0.dims == ("hdu0-0", "hdu0-1", "hdu0-2")
     assert xds.hdu0.attrs == {
@@ -183,5 +184,5 @@ def test_distributed(beam_cube):
 
         (xds,) = xds_from_fits(beam_cube, chunks={0: 100, 1: 100, 2: 15})
         expected = np.arange(np.prod(xds.hdu0.shape)).reshape(xds.hdu0.shape)
-        np.testing.assert_array_equal(expected, xds.hdu0.data)
+        assert_array_equal(expected, xds.hdu0.data)
         assert xds.hdu0.data.chunks == ((100, 100, 57), (100, 100, 57), (15, 15, 2))
