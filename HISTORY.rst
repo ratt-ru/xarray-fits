@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Test name prefix specification (:pr:`16`)
 * Support globbing (:pr:`15`)
 * Specify dimension chunking in C-order (:pr:`14`)
 * Use fits section to selection portions of a FITS file on remote data (:pr:`13`)

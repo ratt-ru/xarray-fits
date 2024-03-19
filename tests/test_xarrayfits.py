@@ -129,6 +129,12 @@ def beam_cube(tmp_path_factory):
     yield filename
 
 
+def test_name_prefix(beam_cube):
+    """Test specification of a name prefix"""
+    (xds,) = xds_from_fits(beam_cube, prefix="beam")
+    assert xds.beam0.dims == ("beam0-0", "beam0-1", "beam0-2")
+
+
 def test_beam_creation(beam_cube):
     (xds,) = xds_from_fits(beam_cube)
     cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
