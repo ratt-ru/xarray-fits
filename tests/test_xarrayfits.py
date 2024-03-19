@@ -9,8 +9,43 @@ from astropy.io import fits
 from dask.distributed import Client, LocalCluster
 import numpy as np
 import pytest
+import xarray
 
 from xarrayfits import xds_from_fits
+
+
+@pytest.fixture(scope="session")
+def multiple_files(tmp_path_factory):
+    path = tmp_path_factory.mktemp("globbing")
+    shape = (10, 10)
+    data = np.arange(np.prod(shape), dtype=np.float64)
+    data = data.reshape(shape)
+
+    for i in range(3):
+        filename = str(path / f"data-{i}.fits")
+        primary_hdu = fits.PrimaryHDU(data)
+        primary_hdu.writeto(filename, overwrite=True)
+
+    return str(path / f"data*.fits")
+
+
+def test_globbing(multiple_files):
+    datasets = xds_from_fits(multiple_files)
+    assert len(datasets) == 3
+
+    for xds in datasets:
+        expected = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
+        expected = expected.reshape(xds.hdu0.shape)
+        np.testing.assert_array_equal(xds.hdu0.data, expected)
+
+    combined = xarray.concat(datasets, dim="hdu0-0")
+    np.testing.assert_array_equal(
+        combined.hdu0.data, np.concatenate([expected] * 3, axis=0)
+    )
+    combined = xarray.concat(datasets, dim="hdu0-1")
+    np.testing.assert_array_equal(
+        combined.hdu0.data, np.concatenate([expected] * 3, axis=1)
+    )
 
 
 @pytest.fixture(scope="session")
@@ -95,7 +130,7 @@ def beam_cube(tmp_path_factory):
 
 
 def test_beam_creation(beam_cube):
-    xds = xds_from_fits(beam_cube)
+    (xds,) = xds_from_fits(beam_cube)
     cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
     cmp_data = cmp_data.reshape(xds.hdu0.shape)
     np.testing.assert_array_equal(xds.hdu0.data, cmp_data)
@@ -136,7 +171,7 @@ def test_distributed(beam_cube):
         cluster = stack.enter_context(LocalCluster(n_workers=8, processes=True))
         stack.enter_context(Client(cluster))
 
-        xds = xds_from_fits(beam_cube, chunks={0: 100, 1: 100, 2: 15})
+        (xds,) = xds_from_fits(beam_cube, chunks={0: 100, 1: 100, 2: 15})
         expected = np.arange(np.prod(xds.hdu0.shape)).reshape(xds.hdu0.shape)
         np.testing.assert_array_equal(expected, xds.hdu0.data)
         assert xds.hdu0.data.chunks == ((100, 100, 57), (100, 100, 57), (15, 15, 2))
