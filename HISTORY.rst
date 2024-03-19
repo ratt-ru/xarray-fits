@@ -2,6 +2,10 @@
 History
 =======
 
+X.Y.Z (YYYY-MM-DD)
+------------------
+* Make distributed an optional package (:pr:`19`)
+
 0.2.0 (2024-03-19)
 ------------------
 * Update README (:pr:`18`)
