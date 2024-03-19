@@ -103,7 +103,7 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
 
 def array_from_fits_hdu(
     fits_proxy,
-    name_prefix,
+    prefix,
     hdu_list,
     hdu_index,
     chunks,
@@ -170,12 +170,12 @@ def array_from_fits_hdu(
         tuple(flat_chunks),
     )
 
-    dims = tuple(f"{name_prefix}{hdu_index}-{i}" for i in range(0, naxis))
+    dims = tuple(f"{prefix}{hdu_index}-{i}" for i in range(0, naxis))
     attrs = {(k, v) for k, v in sorted(hdu.header.items())}
     return xr.DataArray(array, dims=dims, attrs=attrs)
 
 
-def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
+def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
     """
     Parameters
     ----------
@@ -184,7 +184,7 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
     hdus : integer or list of integers, optional
         hdus to represent on the returned Dataset.
         If ``None``, all HDUs are selected
-    name_prefix : str, optional
+    prefix : str, optional
         Array name prefix
     chunks : dictionary or list of dictionaries, optional
         Chunking strategy for each dimension of each hdu.
@@ -229,9 +229,9 @@ def xds_from_fits(fits_filename, hdus=None, name_prefix="hdu", chunks=None):
 
         # Generate xarray datavars for each hdu
         xarrays = {
-            f"{name_prefix}{hdu_index}": array_from_fits_hdu(
+            f"{prefix}{hdu_index}": array_from_fits_hdu(
                 fits_proxy,
-                name_prefix,
+                prefix,
                 fits_proxy.hdu_list,
                 hdu_index,
                 hdu_chunks,
