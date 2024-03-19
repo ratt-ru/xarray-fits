@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Convert from FITS big-endian to machine native (:pr:`17`)
 * Test name prefix specification (:pr:`16`)
 * Support globbing (:pr:`15`)
 * Specify dimension chunking in C-order (:pr:`14`)
