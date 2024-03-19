@@ -44,11 +44,11 @@ Using xarray these can be concatenated along a dimension:
 
   .. code-block:: python
 
-  >>> import xarray
-  >>> ds = xarray.concat(datasets, dim="data0-0")
-  >>> ds
-  <xarray.Dataset> Size: 2kB
-  Dimensions:  (data0-0: 30, data0-1: 10)
-  Dimensions without coordinates: data0-0, data0-1
-  Data variables:
-      data0    (data0-0, data0-1) float64 2kB dask.array<chunksize=(10, 10), meta=np.ndarray>
+    >>> import xarray
+    >>> ds = xarray.concat(datasets, dim="data0-0")
+    >>> ds
+    <xarray.Dataset> Size: 2kB
+    Dimensions:  (data0-0: 30, data0-1: 10)
+    Dimensions without coordinates: data0-0, data0-1
+    Data variables:
+        data0    (data0-0, data0-1) float64 2kB dask.array<chunksize=(10, 10), meta=np.ndarray>
