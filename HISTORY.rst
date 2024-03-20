@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Remove obsolete logger (:pr:`23`)
 * Support lists of fits files (:pr:`21`)
 * Test stacking in the globbing case (:pr:`20`)
 
