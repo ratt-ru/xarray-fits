@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Support lists of fits files (:pr:`21`)
 * Test stacking in the globbing case (:pr:`20`)
 
 0.2.1 (2024-03-19)

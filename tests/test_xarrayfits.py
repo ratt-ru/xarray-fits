@@ -4,6 +4,7 @@
 """Tests for `xarrayfits` package."""
 
 from contextlib import ExitStack
+import os.path
 
 from astropy.io import fits
 from dask.distributed import Client, LocalCluster
@@ -22,16 +23,18 @@ def multiple_files(tmp_path_factory):
     data = np.arange(np.prod(shape), dtype=np.float64)
     data = data.reshape(shape)
 
+    filenames = []
+
     for i in range(3):
         filename = str(path / f"data-{i}.fits")
+        filenames.append(filename)
         primary_hdu = fits.PrimaryHDU(data)
         primary_hdu.writeto(filename, overwrite=True)
 
-    return str(path / f"data*.fits")
+    return filenames
 
 
-def test_globbing(multiple_files):
-    datasets = xds_from_fits(multiple_files)
+def multiple_dataset_tester(datasets):
     assert len(datasets) == 3
 
     for xds in datasets:
@@ -51,6 +54,17 @@ def test_globbing(multiple_files):
     combined = xarray.concat(tds, dim="time")
     assert_array_equal(combined.hdu0.data, np.stack([expected] * 3, axis=0))
     assert combined.hdu0.dims == ("time", "hdu0-0", "hdu0-1")
+
+
+def test_list_files(multiple_files):
+    datasets = xds_from_fits(multiple_files)
+    return multiple_dataset_tester(datasets)
+
+
+def test_globbing(multiple_files):
+    path, _ = os.path.split(multiple_files[0])
+    datasets = xds_from_fits(f"{path}{os.sep}data*.fits")
+    return multiple_dataset_tester(datasets)
 
 
 @pytest.fixture(scope="session")
