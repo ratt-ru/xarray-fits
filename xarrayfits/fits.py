@@ -7,6 +7,7 @@ from itertools import product
 import logging
 import os
 import os.path
+from collections.abc import Sequence
 
 import dask
 import dask.array as da
@@ -180,8 +181,9 @@ def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
     """
     Parameters
     ----------
-    fits_filename : str
-        FITS filename. This can contain a globbed pattern.
+    fits_filename : str or list of str
+        FITS filename or a list of FITS filenames.
+        The first case supports a globbed pattern.
     hdus : integer or list of integers, optional
         hdus to represent on the returned Dataset.
         If ``None``, all HDUs are selected
@@ -202,7 +204,13 @@ def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
         to each HDU on the FITS file.
     """
 
-    openfiles = fsspec.open_files(fits_filename)
+    if isinstance(fits_filename, str):
+        openfiles = fsspec.open_files(fits_filename)
+    elif isinstance(fits_filename, Sequence):
+        openfiles = fsspec.open_files(fits_filename)
+    else:
+        raise TypeError(f"{type(fits_filename)} is not a " f"string or Sequence")
+
     datasets = []
 
     for filename in (f.path for f in openfiles):
