@@ -47,7 +47,7 @@ class FitsProxy(metaclass=FitsProxyMetaClass):
 
     @property
     def is_memory_mapped(self):
-        return self._kwargs.get("memmap", False)
+        return self._kwargs.get("memmap") in {None, True}
 
     @property
     def hdu_list(self):

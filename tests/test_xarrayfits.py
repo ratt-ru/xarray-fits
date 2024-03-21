@@ -4,6 +4,7 @@
 """Tests for `xarrayfits` package."""
 
 from contextlib import ExitStack
+import mmap
 import os.path
 
 from astropy.io import fits
@@ -14,6 +15,7 @@ import pytest
 import xarray
 
 from xarrayfits import xds_from_fits
+from xarrayfits.fits_proxy import FitsProxy
 
 
 @pytest.fixture(scope="session")
@@ -200,3 +202,34 @@ def test_distributed(beam_cube):
         expected = np.arange(np.prod(xds.hdu0.shape)).reshape(xds.hdu0.shape)
         assert_array_equal(expected, xds.hdu0.data)
         assert xds.hdu0.data.chunks == ((100, 100, 57), (100, 100, 57), (15, 15, 2))
+
+
+def test_memory_mapped(beam_cube):
+    with fits.open(beam_cube, memmap=True) as hdu_list:
+        hdu_list[0].data[:]
+        astropy_file = hdu_list.fileinfo(0)["file"]
+        assert isinstance(astropy_file._mmap, mmap.mmap)
+
+    proxy = FitsProxy(beam_cube)
+    assert proxy.is_memory_mapped
+    proxy.hdu_list[0].data[:]
+    astropy_file = proxy.hdu_list.fileinfo(0)["file"]
+    assert isinstance(astropy_file._mmap, mmap.mmap)
+
+    proxy = FitsProxy(beam_cube, memmap=True)
+    assert proxy.is_memory_mapped
+    proxy.hdu_list[0].data[:]
+    astropy_file = proxy.hdu_list.fileinfo(0)["file"]
+    assert isinstance(astropy_file._mmap, mmap.mmap)
+
+    proxy = FitsProxy(beam_cube, memmap=None)
+    assert proxy.is_memory_mapped
+    proxy.hdu_list[0].data[:]
+    astropy_file = proxy.hdu_list.fileinfo(0)["file"]
+    assert isinstance(astropy_file._mmap, mmap.mmap)
+
+    proxy = FitsProxy(beam_cube, memmap=False)
+    assert not proxy.is_memory_mapped
+    proxy.hdu_list[0].data[:]
+    astropy_file = proxy.hdu_list.fileinfo(0)["file"]
+    assert astropy_file._mmap is None
