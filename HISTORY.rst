@@ -2,7 +2,7 @@
 History
 =======
 
-X.Y.Z (YYYY-MM-DD)
+0.2.2 (2024-03-21)
 ------------------
 * Open FITS files as memory-mapped on local file systems (:pr:`24`)
 * Remove obsolete logger (:pr:`23`)
