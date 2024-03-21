@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Open FITS files as memory-mapped on local file systems (:pr:`24`)
 * Remove obsolete logger (:pr:`23`)
 * Support lists of fits files (:pr:`21`)
 * Test stacking in the globbing case (:pr:`20`)
