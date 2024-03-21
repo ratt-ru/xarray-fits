@@ -9,6 +9,7 @@ import os
 import os.path
 from collections.abc import Sequence
 
+from astropy.wcs import WCS
 import dask
 import dask.array as da
 import fsspec
@@ -103,6 +104,17 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
     return da.Array(dsk, name, dsk_chunks, dtype)
 
 
+def coords_from_header(header, shape):
+    wcs = WCS(header, fix=True)
+    pix_coords = tuple(np.arange(s) for s in shape)
+    idx = tuple(
+        tuple(slice(s) if i == j else None for i in range(len(shape)))
+        for j, s in enumerate(shape)
+    )
+    pix_coords = tuple(pc[i] for pc, i in zip(pix_coords, idx))
+    return wcs.array_index_to_world_values(*pix_coords)
+
+
 def array_from_fits_hdu(
     fits_proxy,
     prefix,
@@ -164,13 +176,18 @@ def array_from_fits_hdu(
         except KeyError:
             flat_chunks.append(ax_shape)
 
+    shape = tuple(shape)
+    flat_chunks = tuple(flat_chunks)
+
     array = generate_slice_gets(
         fits_proxy,
         hdu_index,
-        tuple(shape),
+        shape,
         dtype,
-        tuple(flat_chunks),
+        flat_chunks,
     )
+
+    wcs_coords = coords_from_header(hdu.header, shape)
 
     dims = tuple(f"{prefix}{hdu_index}-{i}" for i in range(0, naxis))
     attrs = {(k, v) for k, v in sorted(hdu.header.items())}
