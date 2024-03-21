@@ -12,6 +12,7 @@ from collections.abc import Sequence
 import dask
 import dask.array as da
 import fsspec
+from fsspec.implementations.local import LocalFileSystem
 import numpy as np
 
 import xarray as xr
@@ -58,8 +59,16 @@ def slices(r):
     return (slice(s, e) for s, e in zip(r[:-1], r[1:]))
 
 
-def _get_data_function(fp, h, i, dt):
-    data = fp.hdu_list[h].section[i]
+# https://docs.astropy.org/en/stable/io/fits/index.html#working-with-large-files
+# https://docs.astropy.org/en/stable/io/fits/index.html#working-with-remote-and-cloud-hosted-files
+
+
+def _get_data_function(fits_proxy, h, i, dt):
+    if fits_proxy.is_memory_mapped:
+        data = fits_proxy.hdu_list[h].data[i]
+    else:
+        data = fits_proxy.hdu_list[h].section[i]
+
     return data.astype(dt.newbyteorder("="))
 
 
@@ -213,8 +222,10 @@ def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
 
     datasets = []
 
-    for filename in (f.path for f in openfiles):
-        fits_proxy = FitsProxy(filename, use_fsspec=True)
+    for of in openfiles:
+        fits_proxy = FitsProxy(
+            of.full_name, use_fsspec=True, memmap=isinstance(of.fs, LocalFileSystem)
+        )
 
         # Take all hdus if None specified
         if hdus is None:
