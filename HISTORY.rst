@@ -2,6 +2,10 @@
 History
 =======
 
+0.2.3 (2024-03-22)
+------------------
+* Move FITS header attributes into an xarray "header" attribute (:pr:`22`)
+
 0.2.2 (2024-03-21)
 ------------------
 * Open FITS files as memory-mapped on local file systems (:pr:`24`)
