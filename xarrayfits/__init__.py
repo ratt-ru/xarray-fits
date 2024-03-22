@@ -4,6 +4,6 @@
 
 __author__ = """Simon Perkins"""
 __email__ = "simon.perkins@gmail.com"
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 from xarrayfits.fits import xds_from_fits  # noqa
