@@ -96,7 +96,7 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
 
     token = dask.base.tokenize(fits_proxy, hdu, dtype)
     name = "-".join((short_fits_file(fits_proxy._filename), "slice", token))
-    dsk_chunks = da.core.normalize_chunks(chunks, shape)
+    dsk_chunks = da.core.normalize_chunks(chunks, shape, dtype=dtype)
 
     # Produce keys and slices
     keys = product([name], *[list(range(len(bd))) for bd in dsk_chunks])
