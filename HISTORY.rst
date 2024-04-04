@@ -4,6 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
+* Specify dtype during chunk normalisation (:pr:`33`)
 * Configure dependabot for github actions (:pr:`28`)
 
 0.2.3 (2024-03-22)
