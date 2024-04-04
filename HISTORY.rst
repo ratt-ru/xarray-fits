@@ -2,6 +2,10 @@
 History
 =======
 
+X.Y.Z (YYYY-MM-DD)
+------------------
+* Configure dependabot for github actions (:pr:`28`)
+
 0.2.3 (2024-03-22)
 ------------------
 * Move FITS header attributes into an xarray "header" attribute (:pr:`22`)
