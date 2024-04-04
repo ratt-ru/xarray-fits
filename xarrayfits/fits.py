@@ -17,6 +17,7 @@ import numpy as np
 
 import xarray as xr
 
+from xarrayfits.axes import Axes, UndefinedGridError
 from xarrayfits.fits_proxy import FitsProxy
 
 log = logging.getLogger("xarray-fits")
@@ -160,18 +161,17 @@ def array_from_fits_hdu(
 
     shape = []
     flat_chunks = []
+    axes = Axes(hdu.header)
 
-    # At this point we are dealing with FORTRAN ordered axes
-    for i in range(naxis):
-        ax_key = f"NAXIS{naxis - i}"
-        ax_shape = hdu.header[ax_key]
-        shape.append(ax_shape)
+    # Determine shapes and apply chunking
+    for i in range(axes.ndims):
+        shape.append(axes.naxis[i])
 
         try:
             # Try add existing chunking strategies to the list
             flat_chunks.append(chunks[i])
         except KeyError:
-            flat_chunks.append(ax_shape)
+            flat_chunks.append(axes.naxis[i])
 
     array = generate_slice_gets(
         fits_proxy,
@@ -181,9 +181,15 @@ def array_from_fits_hdu(
         tuple(flat_chunks),
     )
 
-    dims = tuple(f"{prefix}{hdu_index}-{i}" for i in range(0, naxis))
+    dims = tuple(
+        f"{name}{hdu_index}" if (name := axes.name(i)) else f"{prefix}{hdu_index}-{i}"
+        for i in range(axes.ndims)
+    )
+
+    coords = {d: (d, axes.grid(i)) for i, d in enumerate(dims)}
+
     attrs = {"header": {k: v for k, v in sorted(hdu.header.items())}}
-    return xr.DataArray(array, dims=dims, attrs=attrs)
+    return xr.DataArray(array, dims=tuple(dims), coords=coords, attrs=attrs)
 
 
 def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):

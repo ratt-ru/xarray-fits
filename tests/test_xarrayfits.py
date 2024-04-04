@@ -153,7 +153,7 @@ def beam_cube(tmp_path_factory):
 def test_name_prefix(beam_cube):
     """Test specification of a name prefix"""
     (xds,) = xds_from_fits(beam_cube, prefix="beam")
-    assert xds.beam0.dims == ("beam0-0", "beam0-1", "beam0-2")
+    assert xds.beam0.dims == ("X0", "Y0", "FREQ0")
 
 
 def test_beam_creation(beam_cube):
@@ -162,7 +162,7 @@ def test_beam_creation(beam_cube):
     cmp_data = cmp_data.reshape(xds.hdu0.shape)
     assert_array_equal(xds.hdu0.data, cmp_data)
     assert xds.hdu0.data.shape == (257, 257, 32)
-    assert xds.hdu0.dims == ("hdu0-0", "hdu0-1", "hdu0-2")
+    assert xds.hdu0.dims == ("X0", "Y0", "FREQ0")
     assert xds.hdu0.attrs == {
         "header": {
             "BITPIX": -64,
