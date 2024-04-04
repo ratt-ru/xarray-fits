@@ -9,10 +9,10 @@ readme = "README.rst"
 [tool.poetry.dependencies]
 python = "^3.9"
 astropy = "^6.0.0"
-dask = {extras = ["array"], version = "^2024.3.1"}
+dask = {extras = ["array"], version = ">= 2024.1.0, < 2024.2.0"}
 xarray = "^2024.2.0"
 pytest = {version = "^8.1.1", optional = true, extras = ["testing"]}
-distributed = {version = "^2024.3.1", optional = true, extras = ["testing"]}
+distributed = {version = ">= 2024.1.0, < 2024.2.0", optional = true, extras = ["testing"]}
 fsspec = "^2024.3.0"
 
 [tool.poetry.extras]
