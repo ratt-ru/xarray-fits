@@ -17,7 +17,7 @@ import numpy as np
 
 import xarray as xr
 
-from xarrayfits.axes import Axes, UndefinedGridError
+from xarrayfits.grid import AffineGrid
 from xarrayfits.fits_proxy import FitsProxy
 
 log = logging.getLogger("xarray-fits")
@@ -161,17 +161,17 @@ def array_from_fits_hdu(
 
     shape = []
     flat_chunks = []
-    axes = Axes(hdu.header)
+    grid = AffineGrid(hdu.header)
 
     # Determine shapes and apply chunking
-    for i in range(axes.ndims):
-        shape.append(axes.naxis[i])
+    for i in range(grid.ndims):
+        shape.append(grid.naxis[i])
 
         try:
             # Try add existing chunking strategies to the list
             flat_chunks.append(chunks[i])
         except KeyError:
-            flat_chunks.append(axes.naxis[i])
+            flat_chunks.append(grid.naxis[i])
 
     array = generate_slice_gets(
         fits_proxy,
@@ -182,14 +182,12 @@ def array_from_fits_hdu(
     )
 
     dims = tuple(
-        f"{name}{hdu_index}" if (name := axes.name(i)) else f"{prefix}{hdu_index}-{i}"
-        for i in range(axes.ndims)
+        f"{name}{hdu_index}" if (name := grid.name(i)) else f"{prefix}{hdu_index}-{i}"
+        for i in range(grid.ndims)
     )
-
-    coords = {d: (d, axes.grid(i)) for i, d in enumerate(dims)}
-
+    coords = {d: (d, grid.coords(i)) for i, d in enumerate(dims)}
     attrs = {"header": {k: v for k, v in sorted(hdu.header.items())}}
-    return xr.DataArray(array, dims=tuple(dims), coords=coords, attrs=attrs)
+    return xr.DataArray(array, dims=dims, coords=coords, attrs=attrs)
 
 
 def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
