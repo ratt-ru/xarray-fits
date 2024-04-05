@@ -29,11 +29,9 @@ class AffineGrid:
 
         self._grid = []
 
-        for d in range(ndims):
-            pixels = np.arange(1, self._naxis[d] + 1, dtype=np.float64)
-            self._grid.append(
-                (pixels - self._crpix[d]) * self._cdelt[d] + self._crval[d]
-            )
+        for na, rp, dt, rv in zip(self._naxis, self._crpix, self._cdelt, self._crval):
+            pixels = np.arange(1, na + 1, dtype=np.float64)
+            self._grid.append((pixels - rp) * dt + rv)
 
     @property
     def naxis(self):
