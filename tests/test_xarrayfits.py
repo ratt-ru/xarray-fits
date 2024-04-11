@@ -19,57 +19,6 @@ from xarrayfits.fits_proxy import FitsProxy
 
 
 @pytest.fixture(scope="session")
-def multiple_files(tmp_path_factory):
-    path = tmp_path_factory.mktemp("globbing")
-    shape = (10, 10)
-    data = np.arange(np.prod(shape), dtype=np.float64)
-    data = data.reshape(shape)
-
-    filenames = []
-
-    for i in range(3):
-        filename = str(path / f"data-{i}.fits")
-        filenames.append(filename)
-        primary_hdu = fits.PrimaryHDU(data)
-        primary_hdu.writeto(filename, overwrite=True)
-
-    return filenames
-
-
-def multiple_dataset_tester(datasets):
-    assert len(datasets) == 3
-
-    for xds in datasets:
-        expected = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
-        expected = expected.reshape(xds.hdu0.shape)
-        assert_array_equal(xds.hdu0.data, expected)
-
-    combined = xarray.concat(datasets, dim="hdu0-0")
-    assert_array_equal(combined.hdu0.data, np.concatenate([expected] * 3, axis=0))
-    assert combined.hdu0.dims == ("hdu0-0", "hdu0-1")
-
-    combined = xarray.concat(datasets, dim="hdu0-1")
-    assert_array_equal(combined.hdu0.data, np.concatenate([expected] * 3, axis=1))
-    assert combined.hdu0.dims == ("hdu0-0", "hdu0-1")
-
-    tds = [ds.expand_dims(dim="time", axis=0) for ds in datasets]
-    combined = xarray.concat(tds, dim="time")
-    assert_array_equal(combined.hdu0.data, np.stack([expected] * 3, axis=0))
-    assert combined.hdu0.dims == ("time", "hdu0-0", "hdu0-1")
-
-
-def test_list_files(multiple_files):
-    datasets = xds_from_fits(multiple_files)
-    return multiple_dataset_tester(datasets)
-
-
-def test_globbing(multiple_files):
-    path, _ = os.path.split(multiple_files[0])
-    datasets = xds_from_fits(f"{path}{os.sep}data*.fits")
-    return multiple_dataset_tester(datasets)
-
-
-@pytest.fixture(scope="session")
 def beam_cube(tmp_path_factory):
     frequency = np.linspace(0.856e9, 0.856e9 * 2, 32, endpoint=True)
     bandwidth_delta = (frequency[-1] - frequency[0]) / frequency.size
@@ -150,20 +99,133 @@ def beam_cube(tmp_path_factory):
     yield filename
 
 
-def test_name_prefix(beam_cube):
-    """Test specification of a name prefix"""
-    (xds,) = xds_from_fits(beam_cube, prefix="beam")
-    assert xds.beam0.dims == ("X0", "Y0", "FREQ0")
+@pytest.fixture(scope="session")
+def multiple_hdu_file(tmp_path_factory):
+    ctypes = ["X", "Y", "FREQ", "STOKES"]
+
+    def make_hdu(hdu_cls, shape):
+        data = np.arange(np.prod(shape), dtype=np.float64)
+        data = data.reshape(shape)
+        header = {
+            # "SIMPLE": True,
+            # "BITPIX": -64,
+            # "NAXIS": len(data),
+            # **{f"NAXIS{data.ndim - i}": d for i, d in enumerate(data.shape)},
+            **{f"CTYPE{data.ndim - i}": ctypes[i] for i in range(data.ndim)},
+        }
+
+        return hdu_cls(data, header=fits.Header(header))
+
+    hdu1 = make_hdu(fits.PrimaryHDU, (10, 10))
+    hdu2 = make_hdu(fits.ImageHDU, (10, 20, 30))
+    hdu3 = make_hdu(fits.ImageHDU, (30, 40, 50))
+
+    filename = str(tmp_path_factory.mktemp("multihdu") / "data.fits")
+    hdu_list = fits.HDUList([hdu1, hdu2, hdu3])
+    hdu_list.writeto(filename, overwrite=True)
+
+    return filename
+
+
+@pytest.fixture(scope="session")
+def multiple_files(tmp_path_factory):
+    path = tmp_path_factory.mktemp("globbing")
+    shape = (10, 10)
+    data = np.arange(np.prod(shape), dtype=np.float64)
+    data = data.reshape(shape)
+
+    filenames = []
+
+    for i in range(3):
+        filename = str(path / f"data-{i}.fits")
+        filenames.append(filename)
+        primary_hdu = fits.PrimaryHDU(data)
+        primary_hdu.writeto(filename, overwrite=True)
+
+    return filenames
+
+
+def multiple_dataset_tester(datasets):
+    assert len(datasets) == 3
+
+    for xds in datasets:
+        expected = np.arange(np.prod(xds.hdu.shape), dtype=np.float64)
+        expected = expected.reshape(xds.hdu.shape)
+        assert_array_equal(xds.hdu.data, expected)
+
+    combined = xarray.concat(datasets, dim="hdu-0")
+    assert_array_equal(combined.hdu.data, np.concatenate([expected] * 3, axis=0))
+    assert combined.hdu.dims == ("hdu-0", "hdu-1")
+
+    combined = xarray.concat(datasets, dim="hdu-1")
+    assert_array_equal(combined.hdu.data, np.concatenate([expected] * 3, axis=1))
+    assert combined.hdu.dims == ("hdu-0", "hdu-1")
+
+    tds = [ds.expand_dims(dim="time", axis=0) for ds in datasets]
+    combined = xarray.concat(tds, dim="time")
+    assert_array_equal(combined.hdu.data, np.stack([expected] * 3, axis=0))
+    assert combined.hdu.dims == ("time", "hdu-0", "hdu-1")
+
+
+def test_list_files(multiple_files):
+    datasets = xds_from_fits(multiple_files)
+    return multiple_dataset_tester(datasets)
+
+
+def test_globbing(multiple_files):
+    path, _ = os.path.split(multiple_files[0])
+    datasets = xds_from_fits(f"{path}{os.sep}data*.fits")
+    return multiple_dataset_tester(datasets)
+
+
+def test_multiple_unnamed_hdus(multiple_hdu_file):
+    """Test hdu requests with hdu indexes"""
+    (ds,) = xds_from_fits(multiple_hdu_file, hdus=0)
+    assert len(ds.data_vars) == 1
+    assert ds.hdu.shape == (10, 10)
+    assert ds.hdu.dims == ("X", "Y")
+
+    (ds,) = xds_from_fits(multiple_hdu_file, hdus=[0, 2])
+    assert len(ds.data_vars) == 2
+
+    assert ds.hdu0.shape == (10, 10)
+    assert ds.hdu0.dims == ("hdu0-X", "hdu0-Y")
+
+    assert ds.hdu2.shape == (30, 40, 50)
+    assert ds.hdu2.dims == ("hdu2-X", "hdu2-Y", "hdu2-FREQ")
+
+
+def test_multiple_named_hdus(multiple_hdu_file):
+    """Test hdu requests with named hdus"""
+    (ds,) = xds_from_fits(multiple_hdu_file, hdus={0: "beam"})
+    assert ds.beam.dims == ("X", "Y")
+    assert ds.beam.shape == (10, 10)
+
+    (ds,) = xds_from_fits(multiple_hdu_file, hdus=["beam"])
+    assert ds.beam.dims == ("X", "Y")
+    assert ds.beam.shape == (10, 10)
+
+    (ds,) = xds_from_fits(multiple_hdu_file, hdus={0: "beam", 2: "3C147"})
+    assert ds.beam.dims == ("beam-X", "beam-Y")
+    assert ds.beam.shape == (10, 10)
+    assert ds["3C147"].dims == ("3C147-X", "3C147-Y", "3C147-FREQ")
+    assert ds["3C147"].shape == (30, 40, 50)
+
+    (ds,) = xds_from_fits(multiple_hdu_file, hdus=["beam", "3C147"])
+    assert ds.beam.dims == ("beam-X", "beam-Y")
+    assert ds.beam.shape == (10, 10)
+    assert ds["3C147"].dims == ("3C147-X", "3C147-Y", "3C147-FREQ")
+    assert ds["3C147"].shape == (10, 20, 30)
 
 
 def test_beam_creation(beam_cube):
     (xds,) = xds_from_fits(beam_cube)
-    cmp_data = np.arange(np.prod(xds.hdu0.shape), dtype=np.float64)
-    cmp_data = cmp_data.reshape(xds.hdu0.shape)
-    assert_array_equal(xds.hdu0.data, cmp_data)
-    assert xds.hdu0.data.shape == (257, 257, 32)
-    assert xds.hdu0.dims == ("X0", "Y0", "FREQ0")
-    assert xds.hdu0.attrs == {
+    cmp_data = np.arange(np.prod(xds.hdu.shape), dtype=np.float64)
+    cmp_data = cmp_data.reshape(xds.hdu.shape)
+    assert_array_equal(xds.hdu.data, cmp_data)
+    assert xds.hdu.data.shape == (257, 257, 32)
+    assert xds.hdu.dims == ("X", "Y", "FREQ")
+    assert xds.hdu.attrs == {
         "header": {
             "BITPIX": -64,
             "EQUINOX": 2000.0,
@@ -201,9 +263,9 @@ def test_distributed(beam_cube):
         stack.enter_context(Client(cluster))
 
         (xds,) = xds_from_fits(beam_cube, chunks={0: 100, 1: 100, 2: 15})
-        expected = np.arange(np.prod(xds.hdu0.shape)).reshape(xds.hdu0.shape)
-        assert_array_equal(expected, xds.hdu0.data)
-        assert xds.hdu0.data.chunks == ((100, 100, 57), (100, 100, 57), (15, 15, 2))
+        expected = np.arange(np.prod(xds.hdu.shape)).reshape(xds.hdu.shape)
+        assert_array_equal(expected, xds.hdu.data)
+        assert xds.hdu.data.chunks == ((100, 100, 57), (100, 100, 57), (15, 15, 2))
 
 
 def test_memory_mapped(beam_cube):
