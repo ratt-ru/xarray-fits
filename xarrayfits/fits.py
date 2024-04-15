@@ -2,12 +2,14 @@
 
 """Main module."""
 
+from collections import Counter
 from functools import reduce
 from itertools import product
+from numbers import Integral
 import logging
 import os
 import os.path
-from collections.abc import Sequence
+from collections.abc import Sequence, Mapping
 
 import dask
 import dask.array as da
@@ -17,6 +19,7 @@ import numpy as np
 
 import xarray as xr
 
+from xarrayfits.grid import AffineGrid
 from xarrayfits.fits_proxy import FitsProxy
 
 log = logging.getLogger("xarray-fits")
@@ -94,7 +97,7 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
         with the ``hdu``.
     """
 
-    token = dask.base.tokenize(fits_proxy, hdu, dtype)
+    token = dask.base.tokenize(fits_proxy, shape, chunks, hdu, dtype)
     name = "-".join((short_fits_file(fits_proxy._filename), "slice", token))
     dsk_chunks = da.core.normalize_chunks(chunks, shape, dtype=dtype)
 
@@ -114,10 +117,11 @@ def generate_slice_gets(fits_proxy, hdu, shape, dtype, chunks):
 
 def array_from_fits_hdu(
     fits_proxy,
-    prefix,
     hdu_list,
     hdu_index,
+    hdu_name,
     chunks,
+    singleton,
 ):
     """
     Parameters
@@ -128,7 +132,12 @@ def array_from_fits_hdu(
         FITS HDU list
     hdu_index : integer
         HDU index for which to generate an :class:`xarray.DataArray`
+    hdu_name : str
+        HDU name
     chunks : list of dictionaries
+    singleton : bool
+        True if only a single hdu is selected.
+        If False, dimensions will be suffixed with hdu indices
 
     Returns
     -------
@@ -141,14 +150,23 @@ def array_from_fits_hdu(
     except IndexError as e:
         raise IndexError(f"Invalid hdu {hdu_index}") from e
 
-    naxis = hdu.header["NAXIS"]
-    bitpix = hdu.header["BITPIX"]
-    simple = hdu.header["SIMPLE"]
+    try:
+        is_simple = hdu.header["SIMPLE"] is True
+    except KeyError:
+        try:
+            ext = hdu.header["XTENSION"]
+        except KeyError:
+            raise ValueError(
+                f"Neither SIMPLE of XTENSION header card is present"
+            ) from e
+        else:
+            if ext != "IMAGE":
+                raise ValueError(f"{ext} XTENSION is not supported")
+    else:
+        if not is_simple:
+            raise ValueError(f"SIMPLE is not True")
 
-    if simple is False:
-        raise ValueError(
-            f"HDU {hdu} doesn't conform " f"to the FITS standard: " f"SIMPLE={simple}"
-        )
+    bitpix = hdu.header["BITPIX"]
 
     try:
         dtype = INV_BITPIX_MAP[bitpix]
@@ -160,18 +178,17 @@ def array_from_fits_hdu(
 
     shape = []
     flat_chunks = []
+    grid = AffineGrid(hdu.header)
 
-    # At this point we are dealing with FORTRAN ordered axes
-    for i in range(naxis):
-        ax_key = f"NAXIS{naxis - i}"
-        ax_shape = hdu.header[ax_key]
-        shape.append(ax_shape)
+    # Determine shapes and apply chunking
+    for d in range(grid.ndims):
+        shape.append(grid.naxis[d])
 
         try:
             # Try add existing chunking strategies to the list
-            flat_chunks.append(chunks[i])
+            flat_chunks.append(chunks[d])
         except KeyError:
-            flat_chunks.append(ax_shape)
+            flat_chunks.append(grid.naxis[d])
 
     array = generate_slice_gets(
         fits_proxy,
@@ -181,23 +198,38 @@ def array_from_fits_hdu(
         tuple(flat_chunks),
     )
 
-    dims = tuple(f"{prefix}{hdu_index}-{i}" for i in range(0, naxis))
+    dims = []
+
+    for d in range(grid.ndims):
+        if name := grid.name(d):
+            dim_name = name if singleton else f"{hdu_name}-{name}"
+        else:
+            dim_name = f"{hdu_name}-{d}"
+
+        dims.append(dim_name)
+
+    coords = {d: (d, grid.coords(i)) for i, d in enumerate(dims)}
     attrs = {"header": {k: v for k, v in sorted(hdu.header.items())}}
-    return xr.DataArray(array, dims=dims, attrs=attrs)
+    return xr.DataArray(array, dims=dims, coords=coords, attrs=attrs)
 
 
-def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
+def xds_from_fits(fits_filename, hdus=None, chunks=None):
     """
     Parameters
     ----------
     fits_filename : str or list of str
         FITS filename or a list of FITS filenames.
         The first case supports a globbed pattern.
-    hdus : integer or list of integers, optional
-        hdus to represent on the returned Dataset.
-        If ``None``, all HDUs are selected
-    prefix : str, optional
-        Array name prefix
+    hdus : Int or List[Int] or str or List[str] or Dict[Int, str], optional
+        hdus to store on the returned datasets
+        If ``None``, all HDUs are selected.
+
+        if integers, the DataArray's will be named ``hdu{h}``, where h
+        is the hdu index.
+
+        In strings are provided, the DataArray's will be named by name.
+
+        A Dict[int, str] will name DataArry hdus at specific indices.
     chunks : dictionary or list of dictionaries, optional
         Chunking strategy for each dimension of each hdu.
         Dimensions should be specified via the
@@ -227,12 +259,40 @@ def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
             of.full_name, use_fsspec=True, memmap=isinstance(of.fs, LocalFileSystem)
         )
 
+        nhdus = len(fits_proxy.hdu_list)
+
+        type_err_msg = (
+            f"hdus must a int, str, "
+            f"Sequence[int], Sequence[str], "
+            f"or a Mapping[int, str]"
+        )
+
         # Take all hdus if None specified
         if hdus is None:
-            hdus = list(range(len(fits_proxy.hdu_list)))
-        # promote to list in case of single integer
-        elif isinstance(hdus, int):
+            hdus = list(range(nhdus))
+        # promote to list in case of single integer or string
+        elif isinstance(hdus, (Integral, str)):
             hdus = [hdus]
+        elif isinstance(hdus, (Sequence, Mapping)):
+            pass
+        else:
+            raise TypeError(type_err_msg)
+
+        if isinstance(hdus, Mapping):
+            if not all(isinstance(i, int) and i < nhdus for i in hdus.keys()):
+                raise ValueError(f"{hdus} keys must be integers")
+            if any(v > 1 for v in Counter(hdus.values()).values()):
+                raise ValueError(f"{hdus} values must be unique strings")
+        elif isinstance(hdus, Sequence):
+            if all(isinstance(h, str) for h in hdus):
+                hdus = {i: h for i, h in enumerate(hdus)}
+            elif all(isinstance(h, int) for h in hdus):
+                if len(hdus) == 1:
+                    hdus = {0: "hdu"}
+                else:
+                    hdus = {i: f"hdu{i}" for i in hdus}
+        else:
+            raise TypeError(type_err_msg)
 
         if chunks is None:
             chunks = [{} for _ in hdus]
@@ -247,16 +307,14 @@ def xds_from_fits(fits_filename, hdus=None, prefix="hdu", chunks=None):
                 f"chunks ({len(chunks)})"
             )
 
+        singleton = len(hdus) == 1
+
         # Generate xarray datavars for each hdu
         xarrays = {
-            f"{prefix}{hdu_index}": array_from_fits_hdu(
-                fits_proxy,
-                prefix,
-                fits_proxy.hdu_list,
-                hdu_index,
-                hdu_chunks,
+            f"{name}": array_from_fits_hdu(
+                fits_proxy, fits_proxy.hdu_list, index, name, hdu_chunks, singleton
             )
-            for hdu_index, hdu_chunks in zip(hdus, chunks)
+            for (index, name), hdu_chunks in zip(sorted(hdus.items()), chunks)
         }
 
         datasets.append(xr.Dataset(xarrays))
