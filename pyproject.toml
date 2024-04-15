@@ -39,6 +39,8 @@ select = [
     "TID"
 ]
 
+extend-select = ["I"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
