@@ -4,7 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
-* Modernise documentation (:pr:`36`)
+* Modernise documentation (:pr:`38`)
 * Add basic Affine Grid coordinates to xarray datasets (:pr:`35`)
 * Constrain dask versions (:pr:`34`)
 * Specify dtype during chunk normalisation (:pr:`33`)
