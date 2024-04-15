@@ -21,6 +21,7 @@ version = pyproject["version"]
 extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
+    "sphinx.ext.extlinks",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
