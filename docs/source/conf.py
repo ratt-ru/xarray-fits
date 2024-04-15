@@ -26,6 +26,11 @@ extensions = [
     "sphinx.ext.intersphinx",
 ]
 
+extlinks = {
+    "issue": ("https://github.com/ratt-ru/xarray-fits/issues/%s", "GH#"),
+    "pr": ("https://github.com/ratt-ru/xarray-fits/pr/%s", "GH#"),
+}
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
