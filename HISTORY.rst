@@ -2,7 +2,7 @@
 History
 =======
 
-X.Y.Z (YYYY-MM-DD)
+0.2.4 (2024-04-15)
 ------------------
 * Modernise documentation (:pr:`38`)
 * Add basic Affine Grid coordinates to xarray datasets (:pr:`35`)
