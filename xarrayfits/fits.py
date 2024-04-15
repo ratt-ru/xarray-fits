@@ -2,25 +2,26 @@
 
 """Main module."""
 
-from collections import Counter
+from collections.abc import Iterable, Sequence
 from functools import reduce
 from itertools import product
-from numbers import Integral
 import logging
 import os
 import os.path
-from collections.abc import Sequence, Mapping
+from typing import Union
 
 import dask
 import dask.array as da
-import fsspec
-from fsspec.implementations.local import LocalFileSystem
+import fsspec  # type: ignore
+from fsspec.implementations.local import LocalFileSystem  # type: ignore
 import numpy as np
 
 import xarray as xr
 
 from xarrayfits.grid import AffineGrid
 from xarrayfits.fits_proxy import FitsProxy
+from xarrayfits.typing import HduType, ChunksType
+from xarrayfits.utils import promote_chunks, promote_hdus
 
 log = logging.getLogger("xarray-fits")
 
@@ -213,24 +214,26 @@ def array_from_fits_hdu(
     return xr.DataArray(array, dims=dims, coords=coords, attrs=attrs)
 
 
-def xds_from_fits(fits_filename, hdus=None, chunks=None):
+FilenameType = Union[str, Iterable[str]]
+
+
+def xds_from_fits(
+    fits_filename: FilenameType, hdus: HduType = None, chunks: ChunksType = None
+) -> Iterable[xr.Dataset]:
     """
     Parameters
     ----------
-    fits_filename : str or list of str
+    fits_filename: :code:`str` or :code:`Iterable` of :code:`str`.
         FITS filename or a list of FITS filenames.
         The first case supports a globbed pattern.
-    hdus : Int or List[Int] or str or List[str] or Dict[Int, str], optional
-        hdus to store on the returned datasets
-        If ``None``, all HDUs are selected.
+    hdus : ``int`` or ``Iterable`` of ``int`` or ``str`` or ``Iterable`` of ``str`` or ``Mapping[int, str]``, optional
+        Specifies which HDUs are stored on the returned datasets.
 
-        if integers, the DataArray's will be named ``hdu{h}``, where h
-        is the hdu index.
-
-        In strings are provided, the DataArray's will be named by name.
-
-        A Dict[int, str] will name DataArry hdus at specific indices.
-    chunks : dictionary or list of dictionaries, optional
+        - If ``None``, all HDUs are selected.
+        - If integers, the DataArray's will be named ``hdu{h}``, where ``h`` is the hdu index.
+        - If strings are provided, the DataArray's will be named by them.
+        - A ``Mapping[int, str]`` will name DataArry hdus at specific indices.
+    chunks : ``Mapping[str, int]`` or ``Iterable`` of ``Mapping[str, int]``, optional
         Chunking strategy for each dimension of each hdu.
         Dimensions should be specified via the
         C order dimensions
@@ -238,10 +241,10 @@ def xds_from_fits(fits_filename, hdus=None, chunks=None):
 
     Returns
     -------
-    list of :class:`xarray.Dataset`
+    datasets: list of :class:`xarray.Dataset`
         A list of xarray Datasets corresponding to glob matches
         in the ``fits_filename`` parameter.
-        Each Dataset contains the DataArray's corresponding
+        Each Dataset contains :class:`xarray.DataArray` 's corresponding
         to each HDU on the FITS file.
     """
 
@@ -260,61 +263,24 @@ def xds_from_fits(fits_filename, hdus=None, chunks=None):
         )
 
         nhdus = len(fits_proxy.hdu_list)
+        phdus = promote_hdus(hdus, nhdus)
+        pchunks = promote_chunks(chunks, len(phdus))
 
-        type_err_msg = (
-            f"hdus must a int, str, "
-            f"Sequence[int], Sequence[str], "
-            f"or a Mapping[int, str]"
-        )
-
-        # Take all hdus if None specified
-        if hdus is None:
-            hdus = list(range(nhdus))
-        # promote to list in case of single integer or string
-        elif isinstance(hdus, (Integral, str)):
-            hdus = [hdus]
-        elif isinstance(hdus, (Sequence, Mapping)):
-            pass
-        else:
-            raise TypeError(type_err_msg)
-
-        if isinstance(hdus, Mapping):
-            if not all(isinstance(i, int) and i < nhdus for i in hdus.keys()):
-                raise ValueError(f"{hdus} keys must be integers")
-            if any(v > 1 for v in Counter(hdus.values()).values()):
-                raise ValueError(f"{hdus} values must be unique strings")
-        elif isinstance(hdus, Sequence):
-            if all(isinstance(h, str) for h in hdus):
-                hdus = {i: h for i, h in enumerate(hdus)}
-            elif all(isinstance(h, int) for h in hdus):
-                if len(hdus) == 1:
-                    hdus = {0: "hdu"}
-                else:
-                    hdus = {i: f"hdu{i}" for i in hdus}
-        else:
-            raise TypeError(type_err_msg)
-
-        if chunks is None:
-            chunks = [{} for _ in hdus]
-        # Promote to list in case of single dict
-        elif isinstance(chunks, dict):
-            chunks = [chunks]
-
-        if not len(hdus) == len(chunks):
+        if len(phdus) > len(pchunks):
             raise ValueError(
-                f"Number of requested hdus ({len(hdus)}) "
+                f"Number of requested hdus ({len(phdus)}) "
                 f"does not match the number of "
-                f"chunks ({len(chunks)})"
+                f"chunks ({len(pchunks)})"
             )
 
-        singleton = len(hdus) == 1
+        singleton = len(phdus) == 1
 
         # Generate xarray datavars for each hdu
         xarrays = {
             f"{name}": array_from_fits_hdu(
                 fits_proxy, fits_proxy.hdu_list, index, name, hdu_chunks, singleton
             )
-            for (index, name), hdu_chunks in zip(sorted(hdus.items()), chunks)
+            for (index, name), hdu_chunks in zip(sorted(phdus.items()), pchunks)
         }
 
         datasets.append(xr.Dataset(xarrays))

@@ -1,10 +1,10 @@
 from threading import Lock
 import weakref
 
-from astropy.io import fits
+from astropy.io import fits  # type: ignore
 
 TABLE_CACHE_LOCK = Lock()
-TABLE_CACHE = weakref.WeakValueDictionary()
+TABLE_CACHE: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
 
 
 class FitsProxyMetaClass(type):
