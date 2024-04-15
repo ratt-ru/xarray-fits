@@ -28,8 +28,8 @@ extensions = [
 ]
 
 extlinks = {
-    "issue": ("https://github.com/ratt-ru/xarray-fits/issues/%s", "GH#"),
-    "pr": ("https://github.com/ratt-ru/xarray-fits/pr/%s", "GH#"),
+    "issue": ("https://github.com/ratt-ru/xarray-fits/issues/%s", "GH#%s"),
+    "pr": ("https://github.com/ratt-ru/xarray-fits/pull/%s", "GH#%s"),
 }
 
 intersphinx_mapping = {
