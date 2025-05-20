@@ -2,7 +2,7 @@
 History
 =======
 
-X.Y.Z (YYYY-MM-DD)
+0.2.5 (2025-05-20)
 ------------------
 * Include full range of 2024 calver dependencies (:pr:`42`)
 
