@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "xarray-fits"
-version = "0.2.4"
+version = "0.2.5"
 description = "xarray Datasets for FITS-like data"
 authors = ["Simon Perkins <simon.perkins@gmail.com>"]
 packages = [{include = "xarrayfits"}]
