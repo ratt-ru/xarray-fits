@@ -2,6 +2,10 @@
 History
 =======
 
+X.Y.Z (YYYY-MM-DD)
+------------------
+* Include full range of 2024 calver dependencies (:pr:`42`)
+
 0.2.4 (2024-04-15)
 ------------------
 * Modernise documentation (:pr:`38`)
