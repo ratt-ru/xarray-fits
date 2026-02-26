@@ -61,20 +61,9 @@ jobs:
     permissions:
       id-token: write
     steps:
-<<<<<<< pep-621-pyproject
      - name: Checkout source
        uses: actions/checkout@v6
        with:
-=======
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v4
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
-
-      - name: Checkout source
-        uses: actions/checkout@v6
-        with:
->>>>>>> master
           fetch-depth: 1
 
      - name: Build distributions
@@ -99,20 +88,9 @@ jobs:
     permissions:
       id-token: write
     steps:
-<<<<<<< pep-621-pyproject
      - name: Checkout source
        uses: actions/checkout@v6
        with:
-=======
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v4
-        with:
-          poetry-version: ${{ env.POETRY_VERSION }}
-
-      - name: Checkout source
-        uses: actions/checkout@v6
-        with:
->>>>>>> master
           fetch-depth: 1
 
      - name: Build distributions
