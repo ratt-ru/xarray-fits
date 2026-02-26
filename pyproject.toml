@@ -1,6 +1,6 @@
 [project]
 name = "xarray-fits"
-version = "0.2.5"
+version = "0.2.6"
 description = "xarray Datasets for FITS-like data"
 authors = [{name = "Simon Perkins", email = "simon.perkins@gmail.com"}]
 readme = "README.rst"
