@@ -6,16 +6,16 @@ authors = [{name = "Simon Perkins", email = "simon.perkins@gmail.com"}]
 readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = [
-    "astropy>=6.0.0,<7",
-    "dask[array]>=2024.1.0,<2025",
-    "xarray>=2024,<2025",
-    "fsspec>=2024,<2025",
+    "astropy",
+    "dask[array]",
+    "xarray",
+    "fsspec",
 ]
 
 [project.optional-dependencies]
 testing = [
-    "pytest>=8.1.1,<9",
-    "distributed>=2024.1.0,<2025",
+    "pytest",
+    "distributed",
 ]
 dev = [
     "tbump>=6.9.0,<7",
