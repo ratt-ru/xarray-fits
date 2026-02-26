@@ -4,7 +4,7 @@ History
 
 X.Y.Z (YYYY-MM-DD)
 ------------------
-* Update tested Python range from 3.11 to 3.13 (:pr:`48`)
+* Update tested Python range to 3.11 - 3.13 inclusive (:pr:`48`)
 * Update base supported Python to 3.11 (:pr:`48`)
 * Remove dependency guards (:pr:`48`)
 * Migrate to PEP 621 compliant pyproject.toml (:pr:`47`)
