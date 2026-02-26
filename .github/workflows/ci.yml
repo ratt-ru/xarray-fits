@@ -43,7 +43,7 @@ jobs:
           fetch-depth: 1
 
       - name: Install xarray-fits
-        run: pip install -E testing
+        run: pip install .[testing]
 
       - name: Test xarray-fits
         run: py.test -s -vvv tests
