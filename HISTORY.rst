@@ -2,7 +2,7 @@
 History
 =======
 
-X.Y.Z (YYYY-MM-DD)
+0.2.6 (2026-02-26)
 ------------------
 * Update tested Python range to 3.11 - 3.13 inclusive (:pr:`48`)
 * Update base supported Python to 3.11 (:pr:`48`)
