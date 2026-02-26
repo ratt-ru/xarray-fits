@@ -7,7 +7,7 @@ import tomli
 
 with open("../../pyproject.toml", "rb") as f:
     toml = tomli.load(f)
-    pyproject = toml["tool"]["poetry"]
+    pyproject = toml["project"]
 
 project = pyproject["name"]
 copyright = f"{datetime.now().year}, South African Radio Astronomy Observatory (SARAO)"

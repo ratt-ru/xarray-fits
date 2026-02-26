@@ -2,6 +2,10 @@
 History
 =======
 
+X.Y.Z (YYYY-MM-DD)
+------------------
+* Migrate to PEP 621 compliant pyproject.toml (:pr:`47`)
+
 0.2.5 (2025-05-20)
 ------------------
 * Include full range of 2024 calver dependencies (:pr:`42`)
