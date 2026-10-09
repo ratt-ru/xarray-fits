@@ -34,21 +34,24 @@ def coordinate(
 class ImageFactory:
   """Creates the variables of an Image held by a FITS Image"""
 
-  __slots__ = ("_role", "_file_factory", "_structure_factory")
+  __slots__ = ("_role", "_file_factory", "_structure_factory", "_preferred_chunks")
 
   _role: str
   _file_factory: FitsFileFactory
   _structure_factory: FitsImageStructureFactory
+  _preferred_chunks: Dict[str, int]
 
   def __init__(
     self,
     role: str,
     file_factory: FitsFileFactory,
     structure_factory: FitsImageStructureFactory,
+    preferred_chunks: Dict[str, int],
   ):
     self._role = role
     self._file_factory = file_factory
     self._structure_factory = structure_factory
+    self._preferred_chunks = preferred_chunks
 
   def get_variables(self) -> Mapping[str, Variable]:
     """Returns the Image's data variables and coordinates"""
@@ -71,9 +74,14 @@ class ImageFactory:
     shape = (1, spectral.frequency.size, polarizations.size, lon.size, lat.size)
     array = FitsImageArray(self._file_factory, numpy_axes, shape, structure.dtype)
     attrs = {"type": self._role.lower(), **observation.image_attrs}
+    encoding = {
+      "preferred_chunks": {
+        d: c for d, c in self._preferred_chunks.items() if d in SKY_DIMS
+      }
+    }
 
     return {
-      self._role: Variable(SKY_DIMS, LazilyIndexedArray(array), attrs),
+      self._role: Variable(SKY_DIMS, LazilyIndexedArray(array), attrs, encoding),
       "time": coordinate(
         "time", ("time",), [observation.mjd], observation.time_attrs()
       ),
