@@ -74,7 +74,7 @@ VISIBILITY_NORMALIZATION = "VISIBILITY_NORMALIZATION"
 
 
 def is_sky(role: str) -> bool:
-  """Returns whether the Role is a version of the sky image"""
+  """Returns whether the Role is a version of the ``SKY`` Role"""
   return "sky" in role.lower()
 
 
@@ -91,7 +91,7 @@ def role_from_substrings(name: str) -> str | None:
 
 def role_from_name(url: str) -> str:
   """Returns the Role of an Image from its file name. Names that name
-  no Role are sky images, with a warning"""
+  no Role give the ``SKY`` Role, with a warning"""
   full_name = os.path.basename(os.path.normpath(url)).lower()
   name = full_name.removesuffix(".fits")
   last_token = name.split(".")[-1]
@@ -103,8 +103,8 @@ def role_from_name(url: str) -> str:
     return role
 
   warnings.warn(
-    f"The name of {url} names no image role: it is opened as a sky image "
-    f"(SKY). To open it as another image, pass a dict such as "
+    f"The name of {url} names no Role: it is opened in the SKY Role. "
+    f"To open it in another Role, pass a dict such as "
     f"{{'point_spread_function': path}}",
     UnknownRoleWarning,
     stacklevel=2,
@@ -150,8 +150,9 @@ def resolve_roles(filename_or_obj: Any) -> Dict[str, str]:
 
 
 def data_groups(roles: List[str]) -> Dict[str, Dict[str, str]]:
-  """Returns a Data Group for each sky (or aperture) Image, holding it.
-  The other Images are added to every Data Group"""
+  """Returns a Data Group for each Image in a version of the ``SKY`` Role
+  (or the ``APERTURE`` Role), holding it. The other Images are added to
+  every Data Group"""
   groups: Dict[str, Dict[str, str]] = {}
 
   for role in roles:

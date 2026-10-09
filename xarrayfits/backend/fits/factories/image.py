@@ -38,7 +38,7 @@ def coordinate(
   return Variable(dims, values, attrs)
 
 
-def image_type(role: str) -> str:
+def type_attribute(role: str) -> str:
   """Returns the ``type`` attribute of an Image with the given Role"""
   return "sky" if is_sky(role) else role.lower()
 
@@ -68,6 +68,15 @@ class ImageFactory:
     preferred_chunks: Dict[str, int],
     drop_variables: FrozenSet[str] = frozenset(),
   ):
+    """Creates the factory.
+
+    Args:
+      role: Role of the Image.
+      file_factory: The FITS Image holding it.
+      structure_factory: The parsed header of the FITS Image.
+      preferred_chunks: Preferred chunks by dimension.
+      drop_variables: Variables omitted from the Image Dataset.
+    """
     self._role = role
     self._file_factory = file_factory
     self._structure_factory = structure_factory
@@ -84,8 +93,7 @@ class ImageFactory:
     """Name of the Image's flag variable. Floating point Images are
     flagged where they are NaN (see ADR 0001)"""
     name = f"FLAG_{self._role}"
-    structure = self._structure_factory.instance
-    if structure.dtype.kind != "f" or name in self._drop_variables:
+    if self.structure.dtype.kind != "f" or name in self._drop_variables:
       return None
     return name
 
@@ -93,8 +101,7 @@ class ImageFactory:
   def beam_fit_params(self) -> str | None:
     """Name of the Image's beam variable, if it has beams"""
     name = f"BEAM_FIT_PARAMS_{self._role}"
-    structure = self._structure_factory.instance
-    if structure.beams is None or name in self._drop_variables:
+    if self.structure.beams is None or name in self._drop_variables:
       return None
     return name
 
@@ -105,7 +112,7 @@ class ImageFactory:
 
   def get_variables(self) -> Dict[str, Variable]:
     """Returns the Image's data variables and coordinates"""
-    structure = self._structure_factory.instance
+    structure = self.structure
     layout = structure.layout
     observation = structure.observation
     spectral = structure.spectral
@@ -140,7 +147,7 @@ class ImageFactory:
       shape[:ndim],
       structure.dtype,
     )
-    attrs = {**observation.image_attrs, "type": image_type(self._role)}
+    attrs = {**observation.image_attrs, "type": type_attribute(self._role)}
 
     if observation.sub_type is not None:
       attrs["sub_type"] = observation.sub_type

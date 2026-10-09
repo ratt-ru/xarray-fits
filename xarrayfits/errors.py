@@ -18,6 +18,10 @@ class UnsupportedFitsImage(ValueError):
   """Raised when a FITS Image uses a feature that is not supported"""
 
 
+class IncompatibleImages(ValueError):
+  """Raised when FITS Images opened together do not share their coordinates"""
+
+
 class IgnoredHduWarning(UserWarning):
   """Warning raised when a FITS extension HDU is not read"""
 

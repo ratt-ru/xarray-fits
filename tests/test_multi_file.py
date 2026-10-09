@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from xarrayfits.errors import UnknownRoleWarning
+from xarrayfits.errors import IncompatibleImages, UnknownRoleWarning
 from xarrayfits.testing.simulator import (
   DEC,
   FREQ,
@@ -117,7 +117,7 @@ def test_roles_come_from_file_names(tmp_path, name, role):
 def test_unknown_roles_are_sky_with_a_warning(tmp_path):
   path = simulate_fits_image(tmp_path / "cube.fts", cards=DATED)
 
-  with pytest.warns(UnknownRoleWarning, match="names no image role"):
+  with pytest.warns(UnknownRoleWarning, match="names no Role"):
     ds = xr.open_dataset(path, engine=ENGINE)
   assert "SKY" in ds
 
@@ -168,7 +168,7 @@ def test_differing_coordinates_are_rejected(tmp_path):
   psf = simulate_fits_image(
     tmp_path / "cube.psf.fits", cards={**DATED, "CRVAL3": 1.416e9}
   )
-  with pytest.raises(ValueError, match="frequency coordinate"):
+  with pytest.raises(IncompatibleImages, match="frequency coordinate"):
     xr.open_dataset([sky, psf], engine=ENGINE)
 
   stokes = simulate_fits_image(
@@ -176,7 +176,7 @@ def test_differing_coordinates_are_rejected(tmp_path):
     axes=(RA, DEC, FREQ, stokes_axis(1.0, 1.0, 2)),
     cards=DATED,
   )
-  with pytest.raises(ValueError, match="polarization coordinate"):
+  with pytest.raises(IncompatibleImages, match="polarization coordinate"):
     xr.open_dataset([sky, stokes], engine=ENGINE)
 
 

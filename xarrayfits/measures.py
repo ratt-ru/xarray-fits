@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Sequence
 
+import numpy as np
+
 MeasureT = Dict[str, Any]
+
+#: Conversion factor from degrees to radians
+DEG_TO_RAD = np.pi / 180.0
 
 #: Spectral frames without an astropy equivalent, which keep their
 #: casacore name as the ``reference_frequency`` observer

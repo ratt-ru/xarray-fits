@@ -13,6 +13,7 @@ from xarrayfits.backend.fits.roles import (
   data_groups,
   is_sky,
 )
+from xarrayfits.errors import IncompatibleImages
 from xarrayfits.msv4_image_types import (
   BEAM_PARAMS_LABELS,
   IMAGE_DATASET_TYPE,
@@ -43,6 +44,10 @@ COORD_MATCH_TOLERANCE = 1e-6
 #: Shared times that agree within this many seconds are taken as equal
 TIME_MATCH_TOLERANCE_S = 1e-3
 
+#: Shared coordinates of a single value that agree within this fraction
+#: of the value (or absolutely, for values below one) are taken as equal
+SINGLE_VALUE_TOLERANCE = 1e-9
+
 
 def time_offsets(reference: Variable, other: Variable) -> np.ndarray:
   """Returns the offsets of two time coordinates in seconds"""
@@ -64,14 +69,16 @@ def snap(dim: str, reference: Variable, other: Variable, prefix: str) -> Variabl
   ``reference`` coordinate of the Images opened before it.
 
   Raises:
-    ValueError: If the coordinates differ by more than round-off.
+    IncompatibleImages: If the coordinates differ by more than round-off.
   """
   if reference.size != other.size:
-    raise ValueError(f"{prefix} has {other.size} values, theirs has {reference.size}")
+    raise IncompatibleImages(
+      f"{prefix} has {other.size} values, theirs has {reference.size}"
+    )
 
   if reference.dtype.kind not in "iuf" or other.dtype.kind not in "iuf":
     if sorted(reference.values.tolist()) != sorted(other.values.tolist()):
-      raise ValueError(
+      raise IncompatibleImages(
         f"{prefix} has the labels {other.values.tolist()}, "
         f"theirs has {reference.values.tolist()}"
       )
@@ -98,7 +105,7 @@ def snap(dim: str, reference: Variable, other: Variable, prefix: str) -> Variabl
       tolerance = COORD_MATCH_TOLERANCE * increment
     else:
       increment = None
-      tolerance = 1e-9 * max(1.0, float(np.abs(ref_values).max()))
+      tolerance = SINGLE_VALUE_TOLERANCE * max(1.0, float(np.abs(ref_values).max()))
 
   largest = float(np.abs(offsets).max()) if offsets.size else 0.0
 
@@ -106,7 +113,7 @@ def snap(dim: str, reference: Variable, other: Variable, prefix: str) -> Variabl
     fraction = (
       f" ({largest / increment:.3g} of the {dim} increment)" if increment else ""
     )
-    raise ValueError(
+    raise IncompatibleImages(
       f"{prefix} differs from theirs by up to {largest:g}{units}{fraction}, "
       f"more than the tolerance of {tolerance:g}{units}. "
       f"Images opened together must share their coordinates."

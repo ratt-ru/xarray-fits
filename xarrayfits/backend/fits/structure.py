@@ -54,6 +54,11 @@ class FitsImageStructure:
   beams: npt.NDArray[np.float64] | None
 
   def __init__(self, file_factory: FitsFileFactory):
+    """Parses the FITS Image's header.
+
+    Args:
+      file_factory: The FITS Image.
+    """
     hdu_list = file_factory.instance.hdu_list
     header = primary_header(hdu_list)
     self.layout = read_axes(header)

@@ -9,13 +9,13 @@ import numpy as np
 from astropy.time import Time
 from erfa import ErfaWarning
 
-from xarrayfits.backend.fits.coordinate_system import DEG_TO_RAD, to_radians
+from xarrayfits.backend.fits.coordinate_system import to_radians
 from xarrayfits.errors import (
   InvalidObservationDateWarning,
   MissingObservationDateWarning,
   UnknownTimeScaleWarning,
 )
-from xarrayfits.measures import sky_coord, time_attrs, time_measure
+from xarrayfits.measures import DEG_TO_RAD, sky_coord, time_attrs, time_measure
 
 if TYPE_CHECKING:
   from astropy.io.fits import Header

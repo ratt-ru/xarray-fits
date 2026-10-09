@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable, List, Mapping
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable, List, Mapping, Tuple
 
 from rarg_python_patterns.multiton import Multiton
 from xarray.backends import BackendEntrypoint
@@ -24,7 +24,7 @@ DEFAULT_PREFERRED_CHUNKS = {"frequency": 1, "polarization": 1}
 if TYPE_CHECKING:
   from io import BufferedIOBase
 
-  from xarray import Dataset
+  from xarray import Dataset, Variable
 
   from xarrayfits.backend.fits.structure import (
     FitsFileFactory,
@@ -41,6 +41,7 @@ class FitsStore(AbstractDataStore):
     "_structure_factories",
     "_preferred_chunks",
     "_drop_variables",
+    "_assembled",
   )
 
   _urls: Dict[str, str]
@@ -48,6 +49,7 @@ class FitsStore(AbstractDataStore):
   _structure_factories: Dict[str, FitsImageStructureFactory]
   _preferred_chunks: Dict[str, int]
   _drop_variables: FrozenSet[str]
+  _assembled: Tuple[Dict[str, Variable], Dict[str, Any]] | None
 
   def __init__(
     self,
@@ -62,6 +64,7 @@ class FitsStore(AbstractDataStore):
     self._structure_factories = structure_factories
     self._preferred_chunks = preferred_chunks
     self._drop_variables = drop_variables
+    self._assembled = None
 
   @classmethod
   def open(
@@ -111,14 +114,21 @@ class FitsStore(AbstractDataStore):
     for factory in self._structure_factories.values():
       factory.release()
 
+  def assemble(self) -> Tuple[Dict[str, Variable], Dict[str, Any]]:
+    """Returns the variables and attributes of the Image Dataset,
+    assembling them once"""
+    if self._assembled is None:
+      self._assembled = self.dataset_factory().assemble()
+    return self._assembled
+
   def get_variables(self):
     """Overrides AbstractDataStore.get_variables"""
-    variables, _ = self.dataset_factory().assemble()
+    variables, _ = self.assemble()
     return variables
 
   def get_attrs(self) -> Dict[str, Any]:
     """Overrides AbstractDataStore.get_attrs"""
-    _, attrs = self.dataset_factory().assemble()
+    _, attrs = self.assemble()
     return attrs
 
   def get_dimensions(self):
@@ -134,6 +144,7 @@ class FitsEntryPoint(BackendEntrypoint):
   open_dataset_parameters = ["filename_or_obj", "drop_variables", "preferred_chunks"]
   description = "Opens FITS Images as MSv4 Image Datasets in Xarray"
   url = "https://xarray-fits.readthedocs.io/"
+  supports_groups = False
 
   def guess_can_open(
     self, filename_or_obj: str | os.PathLike[Any] | BufferedIOBase | AbstractDataStore

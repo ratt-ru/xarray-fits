@@ -8,7 +8,7 @@ import numpy as np
 from xarray.backends import BackendArray
 from xarray.core.indexing import IndexingSupport, explicit_indexing_adapter
 
-from xarrayfits.backend.fits.coordinate_system import DEG_TO_RAD
+from xarrayfits.measures import DEG_TO_RAD
 
 if TYPE_CHECKING:
   import numpy.typing as npt
@@ -160,6 +160,11 @@ class FlagArray(BackendArray):
   _image: FitsImageArray
 
   def __init__(self, image: FitsImageArray):
+    """Creates the array.
+
+    Args:
+      image: The pixels to flag.
+    """
     self._image = image
     self.shape = image.shape
     self.dtype = np.dtype(bool)

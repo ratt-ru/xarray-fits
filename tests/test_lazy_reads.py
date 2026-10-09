@@ -2,6 +2,7 @@ import pickle
 
 import pytest
 import xarray as xr
+from rarg_python_patterns.multiton import Multiton
 
 from xarrayfits.testing.simulator import DEC, RA, simulate_fits_image
 
@@ -42,7 +43,10 @@ def test_preferred_chunks_can_be_overridden(image):
 @pytest.mark.parametrize("chunks", [None, {}])
 def test_image_datasets_pickle(image, chunks):
   ds = xr.open_dataset(image, engine=ENGINE, chunks=chunks)
-  xr.testing.assert_identical(pickle.loads(pickle.dumps(ds)).load(), ds.load())
+  pickled = pickle.dumps(ds)
+  # Unpickled Image Datasets reopen their FITS Images
+  Multiton._INSTANCE_CACHE.clear()
+  xr.testing.assert_identical(pickle.loads(pickled).load(), ds.load())
 
 
 def test_dask_and_distributed_reads_equal_eager_reads(image):

@@ -10,15 +10,12 @@ from astropy import units as u
 from astropy.io import fits
 
 from xarrayfits.errors import UnsupportedFitsImage
-from xarrayfits.measures import direction_location, sky_coord
+from xarrayfits.measures import DEG_TO_RAD, direction_location, sky_coord
 
 if TYPE_CHECKING:
   from astropy.io.fits import Header
 
   from xarrayfits.backend.fits.axes import AxisLayout
-
-#: Conversion factor from degrees to radians
-DEG_TO_RAD = np.pi / 180.0
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
