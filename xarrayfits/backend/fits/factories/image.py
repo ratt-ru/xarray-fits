@@ -83,7 +83,7 @@ class ImageFactory:
       }
     }
 
-    return {
+    variables = {
       self._role: Variable(SKY_DIMS, LazilyIndexedArray(array), attrs, encoding),
       "time": coordinate(
         "time", ("time",), [observation.mjd], observation.time_attrs()
@@ -100,3 +100,10 @@ class ImageFactory:
         "beam_params_label", ("beam_params_label",), np.asarray(BEAM_PARAMS_LABELS)
       ),
     }
+
+    if spectral.velocity is not None:
+      variables["velocity"] = coordinate(
+        "velocity", ("frequency",), spectral.velocity, spectral.velocity_attrs()
+      )
+
+    return variables

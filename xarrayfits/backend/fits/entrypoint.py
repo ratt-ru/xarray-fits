@@ -53,7 +53,7 @@ class FitsStore(AbstractDataStore):
 
   @classmethod
   def open(cls, path: str, preferred_chunks: Dict[str, int] | None = None) -> FitsStore:
-    file_factory = Multiton(FitsFile, path)
+    file_factory = Multiton(FitsFile, path, os.stat(path).st_mtime_ns)
     structure_factory = Multiton(FitsImageStructure, file_factory)
     preferred_chunks = {**DEFAULT_PREFERRED_CHUNKS, **(preferred_chunks or {})}
     return cls(file_factory, structure_factory, preferred_chunks)

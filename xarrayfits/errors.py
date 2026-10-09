@@ -20,3 +20,7 @@ class UnsupportedFitsImage(ValueError):
 
 class IgnoredHduWarning(UserWarning):
   """Warning raised when a FITS extension HDU is not read"""
+
+
+class UnknownSpectralFrameWarning(UserWarning):
+  """Warning raised when a FITS Image's spectral reference frame is unknown"""

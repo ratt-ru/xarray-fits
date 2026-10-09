@@ -3,7 +3,7 @@ import pickle
 import pytest
 import xarray as xr
 
-from xarrayfits.testing.simulator import simulate_fits_image
+from xarrayfits.testing.simulator import DEC, RA, simulate_fits_image
 
 ENGINE = "xarray-fits:fits"
 
@@ -57,3 +57,13 @@ def test_dask_and_distributed_reads_equal_eager_reads(image):
   ) as cluster:
     with distributed.Client(cluster):
       xr.testing.assert_identical(chunked.compute(), eager)
+
+
+def test_rewritten_images_are_reread(tmp_path):
+  path = simulate_fits_image(tmp_path / "image.fits")
+  assert xr.open_dataset(path, engine=ENGINE).SKY.values.max() == 89
+
+  simulate_fits_image(tmp_path / "image.fits", axes=(RA, DEC))
+  ds = xr.open_dataset(path, engine=ENGINE)
+  assert ds.sizes["frequency"] == 1
+  assert ds.SKY.values.max() == 29

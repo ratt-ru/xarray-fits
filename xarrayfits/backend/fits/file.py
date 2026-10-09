@@ -21,7 +21,14 @@ class FitsFile:
   _hdu_list: fits.HDUList
   _lock: Lock
 
-  def __init__(self, path: str):
+  def __init__(self, path: str, version: int | None = None):
+    """Opens the FITS file.
+
+    Args:
+      path: Path of the FITS file.
+      version: Modification time of the FITS file, which distinguishes
+        cached handles of a file that has since been rewritten.
+    """
     self._path = path
     self._hdu_list = fits.open(path, memmap=True)
     self._lock = Lock()
