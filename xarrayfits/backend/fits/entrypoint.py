@@ -11,7 +11,7 @@ from xarray.backends.store import StoreBackendEntrypoint
 from xarray.core.utils import try_read_magic_number_from_file_or_path
 
 from xarrayfits.backend.fits.factories import ImageFactory
-from xarrayfits.backend.fits.file import FitsFile
+from xarrayfits.backend.fits.file import FitsFile, file_version
 from xarrayfits.backend.fits.structure import FitsImageStructure
 from xarrayfits.msv4_image_types import IMAGE_DATASET_TYPE, IMAGE_SCHEMA_VERSION
 
@@ -66,7 +66,7 @@ class FitsStore(AbstractDataStore):
     drop_variables: str | Iterable[str] | None = None,
     preferred_chunks: Dict[str, int] | None = None,
   ) -> FitsStore:
-    file_factory = Multiton(FitsFile, path, os.stat(path).st_mtime_ns)
+    file_factory = Multiton(FitsFile, path, file_version(path))
     structure_factory = Multiton(FitsImageStructure, file_factory)
     preferred_chunks = {**DEFAULT_PREFERRED_CHUNKS, **(preferred_chunks or {})}
 
@@ -149,7 +149,7 @@ class FitsEntryPoint(BackendEntrypoint):
     """Opens a FITS Image as an Image Dataset.
 
     Args:
-      filename_or_obj: Path of the FITS Image.
+      filename_or_obj: Path or fsspec URL of the FITS Image.
       drop_variables: Variables to omit from the Image Dataset.
       preferred_chunks: Chunk sizes by dimension, which xarray uses
         when ``chunks={}`` is passed. Defaults to one chunk per

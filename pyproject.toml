@@ -19,6 +19,7 @@ test = [
     "dask>=2024.5.0",
     "distributed>=2024.5.0",
     "platformdirs>=4.3.8",
+    "aiohttp>=3.9",
     # Conformance oracle, pinned until a release ships image schema 0.0.2
     "xradio[zarr] @ git+https://github.com/casangi/xradio@70412d6183ed8aebeea49dbcef57bbb9e04917a9 ; python_version < '3.14'",
 ]
