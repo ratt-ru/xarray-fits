@@ -22,5 +22,18 @@ class IgnoredHduWarning(UserWarning):
   """Warning raised when a FITS extension HDU is not read"""
 
 
-class UnknownSpectralFrameWarning(UserWarning):
+class UnknownMetadataWarning(UserWarning):
+  """Warning raised when FITS Image metadata cannot be interpreted
+  and is ignored"""
+
+
+class UnknownSpectralFrameWarning(UnknownMetadataWarning):
   """Warning raised when a FITS Image's spectral reference frame is unknown"""
+
+
+class UnknownTimeScaleWarning(UnknownMetadataWarning):
+  """Warning raised when a FITS Image's time scale is unknown"""
+
+
+class InvalidObservationDateWarning(UnknownMetadataWarning):
+  """Warning raised when a FITS Image's observation date cannot be interpreted"""

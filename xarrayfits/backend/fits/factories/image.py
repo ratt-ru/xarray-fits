@@ -31,6 +31,11 @@ def coordinate(
   return Variable(dims, values, attrs)
 
 
+def image_type(role: str) -> str:
+  """Returns the ``type`` attribute of an Image with the given Role"""
+  return "sky" if "sky" in role.lower() else role.lower()
+
+
 class ImageFactory:
   """Creates the variables of an Image held by a FITS Image"""
 
@@ -76,7 +81,11 @@ class ImageFactory:
     array = FitsImageArray(
       self._file_factory, numpy_axes, orders, shape, structure.dtype
     )
-    attrs = {"type": self._role.lower(), **observation.image_attrs}
+    attrs = {**observation.image_attrs, "type": image_type(self._role)}
+
+    if observation.sub_type is not None:
+      attrs["sub_type"] = observation.sub_type
+
     encoding = {
       "preferred_chunks": {
         d: c for d, c in self._preferred_chunks.items() if d in SKY_DIMS
