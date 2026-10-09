@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
@@ -23,6 +24,22 @@ BITPIX_DTYPES = {
 #: Spectral axis types (the first four ``CTYPE`` characters) that are
 #: converted to frequency
 SPECTRAL_AXIS_TYPES = ("FREQ", "VOPT", "VRAD", "FELO")
+
+#: Spectral axis types that are not supported
+OTHER_SPECTRAL_AXIS_TYPES = ("VELO", "WAVE", "AWAV", "WAVN", "ZOPT", "BETA", "ENER")
+
+#: AIPS spectral frame suffix of ``CTYPEi`` -> casacore spectral frame
+CTYPE_FRAME_TAGS = {
+  "LSR": "LSRK",
+  "LSRK": "LSRK",
+  "HEL": "BARY",
+  "OBS": "TOPO",
+  "LSD": "LSRD",
+  "GEO": "GEO",
+  "SOU": "REST",
+  "REST": "REST",
+  "GAL": "GALACTO",
+}
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -72,6 +89,21 @@ class AxisLayout:
     return None if fits_axis is None else len(self.axes) - 1 - fits_axis
 
 
+def spectral_ctype_tag(ctype: str) -> str:
+  """Returns the AIPS frame suffix of a spectral ``CTYPE``, such as
+  ``"LSR"`` for ``"FREQ-LSR"``, or ``""``"""
+  return ctype[4:].replace("-", "").strip().upper()
+
+
+def is_spectral(ctype: str) -> bool:
+  """Returns whether ``ctype`` is a supported spectral axis: one of
+  :data:`SPECTRAL_AXIS_TYPES`, alone or with an AIPS frame suffix"""
+  tag = spectral_ctype_tag(ctype)
+  return ctype[:4].upper() in SPECTRAL_AXIS_TYPES and (
+    tag == "" or tag in CTYPE_FRAME_TAGS
+  )
+
+
 def default_axis_unit(ctype: str) -> str:
   """Unit of an axis without ``CUNITi``"""
   if ctype[:4].upper() == "FREQ":
@@ -98,10 +130,24 @@ def read_axes(header: Header) -> AxisLayout:
       lat = i
     elif ctype == "STOKES":
       polarization = i
-    elif ctype[:4].upper() in SPECTRAL_AXIS_TYPES:
+    elif is_spectral(ctype):
       frequency = i
+    elif ctype[:4].upper() in SPECTRAL_AXIS_TYPES + OTHER_SPECTRAL_AXIS_TYPES:
+      raise UnsupportedFitsImage(
+        f"{ctype} is an unsupported spectral axis; supported spectral "
+        f"axes are {', '.join(SPECTRAL_AXIS_TYPES)}, optionally with an "
+        f"AIPS frame suffix such as '-LSR'"
+      )
     else:
       raise UnsupportedFitsImage(f"{ctype} is an unsupported axis")
+
+    if f"CDELT{n}" not in header and any(
+      re.fullmatch(r"CD\d+_\d+", key) for key in header.keys()
+    ):
+      raise UnsupportedFitsImage(
+        "FITS images whose coordinates are given by a CDi_j matrix "
+        "instead of CDELTi (and PCi_j) are not supported"
+      )
 
     unit = str(header.get(f"CUNIT{n}", "")).strip()
     axes.append(

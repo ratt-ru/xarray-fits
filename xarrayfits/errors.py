@@ -16,3 +16,7 @@ class InvalidFitsImage(ValueError):
 
 class UnsupportedFitsImage(ValueError):
   """Raised when a FITS Image uses a feature that is not supported"""
+
+
+class IgnoredHduWarning(UserWarning):
+  """Warning raised when a FITS extension HDU is not read"""

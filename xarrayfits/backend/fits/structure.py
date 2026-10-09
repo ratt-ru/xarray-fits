@@ -12,6 +12,7 @@ from xarrayfits.backend.fits.coordinate_system import (
   to_radians,
 )
 from xarrayfits.backend.fits.file import FitsFile
+from xarrayfits.backend.fits.hdus import primary_header
 from xarrayfits.backend.fits.observation import Observation, read_observation
 from xarrayfits.backend.fits.polarization import read_polarizations
 from xarrayfits.backend.fits.spectral import Spectral, read_spectral
@@ -46,7 +47,7 @@ class FitsImageStructure:
   observation: Observation
 
   def __init__(self, file_factory: FitsFileFactory):
-    header = file_factory.instance.hdu_list[0].header
+    header = primary_header(file_factory.instance.hdu_list)
     self.layout = read_axes(header)
     self.dtype = dtype_from_bitpix(header)
     self.coordinate_system = read_coordinate_system(header, self.layout)
