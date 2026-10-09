@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Sequence
 
 from xarrayfits.errors import UnsupportedFitsImage
+from xarrayfits.msv4_image_types import CANONICAL_POLARIZATION_ORDER
 
 if TYPE_CHECKING:
   from xarrayfits.backend.fits.axes import AxisLayout
@@ -43,3 +44,11 @@ def read_polarizations(layout: AxisLayout) -> List[str]:
       ) from None
 
   return labels
+
+
+def canonical_order(labels: Sequence[str]) -> List[int]:
+  """Returns the permutation that puts polarization labels in canonical
+  order. Unknown labels keep their relative order after the known ones"""
+  unknown = len(CANONICAL_POLARIZATION_ORDER)
+  index = {label: i for i, label in enumerate(CANONICAL_POLARIZATION_ORDER)}
+  return sorted(range(len(labels)), key=lambda i: (index.get(labels[i], unknown), i))

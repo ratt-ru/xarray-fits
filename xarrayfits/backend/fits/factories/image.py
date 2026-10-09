@@ -71,8 +71,11 @@ class ImageFactory:
       layout.numpy_axis(layout.lon),
       layout.numpy_axis(layout.lat),
     )
+    orders = (None, None, np.asarray(structure.polarization_order), None, None)
     shape = (1, spectral.frequency.size, polarizations.size, lon.size, lat.size)
-    array = FitsImageArray(self._file_factory, numpy_axes, shape, structure.dtype)
+    array = FitsImageArray(
+      self._file_factory, numpy_axes, orders, shape, structure.dtype
+    )
     attrs = {"type": self._role.lower(), **observation.image_attrs}
     encoding = {
       "preferred_chunks": {

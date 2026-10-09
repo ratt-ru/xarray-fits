@@ -14,7 +14,7 @@ from xarrayfits.backend.fits.coordinate_system import (
 from xarrayfits.backend.fits.file import FitsFile
 from xarrayfits.backend.fits.hdus import primary_header
 from xarrayfits.backend.fits.observation import Observation, read_observation
-from xarrayfits.backend.fits.polarization import read_polarizations
+from xarrayfits.backend.fits.polarization import canonical_order, read_polarizations
 from xarrayfits.backend.fits.spectral import Spectral, read_spectral
 
 if TYPE_CHECKING:
@@ -28,13 +28,16 @@ FitsImageStructureFactory: TypeAlias = Multiton["FitsImageStructure"]
 
 
 class FitsImageStructure:
-  """The parsed primary HDU header of a FITS Image"""
+  """The parsed primary HDU header of a FITS Image. Polarizations are in
+  canonical order, and ``polarization_order`` gives the FITS plane
+  of each"""
 
   __slots__ = (
     "layout",
     "dtype",
     "coordinate_system",
     "polarizations",
+    "polarization_order",
     "spectral",
     "observation",
   )
@@ -43,6 +46,7 @@ class FitsImageStructure:
   dtype: np.dtype
   coordinate_system: CoordinateSystem
   polarizations: List[str]
+  polarization_order: List[int]
   spectral: Spectral
   observation: Observation
 
@@ -51,7 +55,9 @@ class FitsImageStructure:
     self.layout = read_axes(header)
     self.dtype = dtype_from_bitpix(header)
     self.coordinate_system = read_coordinate_system(header, self.layout)
-    self.polarizations = read_polarizations(self.layout)
+    fits_polarizations = read_polarizations(self.layout)
+    self.polarization_order = canonical_order(fits_polarizations)
+    self.polarizations = [fits_polarizations[i] for i in self.polarization_order]
     self.spectral = read_spectral(header, self.layout)
     self.observation = read_observation(header, self.layout, self.coordinate_system)
 

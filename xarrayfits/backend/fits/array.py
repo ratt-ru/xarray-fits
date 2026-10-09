@@ -18,17 +18,19 @@ class FitsImageArray(BackendArray):
   """Lazily reads the primary HDU pixels of a FITS Image as an array
   of sky-plane dimensions"""
 
-  __slots__ = ("shape", "dtype", "_file_factory", "_numpy_axes")
+  __slots__ = ("shape", "dtype", "_file_factory", "_numpy_axes", "_orders")
 
   shape: Tuple[int, ...]
   dtype: np.dtype
   _file_factory: FitsFileFactory
   _numpy_axes: Tuple[int | None, ...]
+  _orders: Tuple[npt.NDArray[np.intp] | None, ...]
 
   def __init__(
     self,
     file_factory: FitsFileFactory,
     numpy_axes: Tuple[int | None, ...],
+    orders: Tuple[npt.NDArray[np.intp] | None, ...],
     shape: Tuple[int, ...],
     dtype: npt.DTypeLike,
   ):
@@ -39,11 +41,14 @@ class FitsImageArray(BackendArray):
       numpy_axes: For each dimension, the numpy axis of the pixels
         holding it, or ``None`` for a dimension of length one
         that the FITS Image does not have.
+      orders: For each dimension, the pixel index of each element,
+        or ``None`` if they are in the same order.
       shape: Shape of the array.
       dtype: Data type of the array.
     """
     self._file_factory = file_factory
     self._numpy_axes = numpy_axes
+    self._orders = orders
     self.shape = shape
     self.dtype = np.dtype(dtype)
 
@@ -54,7 +59,10 @@ class FitsImageArray(BackendArray):
 
   def _getitem(self, key) -> npt.NDArray:
     squeeze = tuple(i for i, k in enumerate(key) if isinstance(k, (int, np.integer)))
-    index = [np.atleast_1d(np.arange(n)[k]) for k, n in zip(key, self.shape)]
+    index = [
+      np.atleast_1d(np.arange(n)[k] if order is None else order[k])
+      for k, n, order in zip(key, self.shape, self._orders)
+    ]
     expected_shape = tuple(len(i) for i in index)
 
     if reduce(mul, expected_shape, 1) == 0:
