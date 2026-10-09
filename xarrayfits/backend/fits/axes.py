@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import dataclasses
 import re
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Any, Tuple
 
 import numpy as np
 
-from xarrayfits.errors import UnsupportedFitsImage
+from xarrayfits.errors import InvalidFitsImage, UnsupportedFitsImage
 
 if TYPE_CHECKING:
   from astropy.io.fits import Header
@@ -115,14 +115,22 @@ def default_axis_unit(ctype: str) -> str:
   return "deg"
 
 
+def required_card(header: Header, key: str) -> Any:
+  """Returns the value of a header card the FITS Image must have"""
+  try:
+    return header[key]
+  except KeyError:
+    raise InvalidFitsImage(f"The FITS header lacks the required {key} card") from None
+
+
 def read_axes(header: Header) -> AxisLayout:
   """Reads the axes of the primary HDU header"""
   axes = []
   lon = lat = frequency = polarization = None
 
-  for i in range(header["NAXIS"]):
+  for i in range(required_card(header, "NAXIS")):
     n = i + 1
-    ctype = header[f"CTYPE{n}"]
+    ctype = required_card(header, f"CTYPE{n}")
 
     if ctype.startswith("RA-"):
       lon = i
@@ -153,10 +161,10 @@ def read_axes(header: Header) -> AxisLayout:
     axes.append(
       Axis(
         ctype=ctype,
-        naxis=header[f"NAXIS{n}"],
-        crval=header[f"CRVAL{n}"],
-        cdelt=header[f"CDELT{n}"],
-        crpix=header[f"CRPIX{n}"] - 1,
+        naxis=required_card(header, f"NAXIS{n}"),
+        crval=required_card(header, f"CRVAL{n}"),
+        cdelt=required_card(header, f"CDELT{n}"),
+        crpix=required_card(header, f"CRPIX{n}") - 1,
         cunit=unit or default_axis_unit(ctype),
       )
     )

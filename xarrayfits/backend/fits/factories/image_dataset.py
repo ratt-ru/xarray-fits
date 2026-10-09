@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, Any, Dict, Tuple
 
 import numpy as np
@@ -49,19 +50,65 @@ TIME_MATCH_TOLERANCE_S = 1e-3
 SINGLE_VALUE_TOLERANCE = 1e-9
 
 
-def time_offsets(reference: Variable, other: Variable) -> np.ndarray:
+@dataclasses.dataclass(frozen=True, slots=True)
+class Offsets:
+  """Offsets between a shared coordinate of two Images"""
+
+  values: np.ndarray
+  """Offsets of the values of the other coordinate from the reference"""
+  tolerance: float
+  """Largest offset that is taken as round-off"""
+  units: str
+  """Units of the offsets, for messages"""
+  increment: float | None
+  """Increment of the axis the tolerance is based on"""
+
+
+def time_offsets(reference: Variable, other: Variable) -> Offsets:
   """Returns the offsets of two time coordinates in seconds"""
   keys = ("units", "format", "scale")
 
   if all(reference.attrs.get(k) == other.attrs.get(k) for k in keys):
     seconds = float(u.Unit(reference.attrs["units"]).to(u.s))
-    return (other.values - reference.values) * seconds
+    values = (other.values - reference.values) * seconds
+  else:
 
-  def to_time(v: Variable) -> Time:
-    values = np.asarray(v.values, dtype=float) * u.Unit(v.attrs["units"])
-    return Time(values, format=v.attrs["format"], scale=v.attrs["scale"])
+    def to_time(v: Variable) -> Time:
+      values = np.asarray(v.values, dtype=float) * u.Unit(v.attrs["units"])
+      return Time(values, format=v.attrs["format"], scale=v.attrs["scale"])
 
-  return np.atleast_1d((to_time(other) - to_time(reference)).sec)
+    values = np.atleast_1d((to_time(other) - to_time(reference)).sec)
+
+  return Offsets(values, TIME_MATCH_TOLERANCE_S, " s", None)
+
+
+def numeric_offsets(dim: str, reference: Variable, other: Variable) -> Offsets:
+  """Returns the offsets of two numeric coordinates, with a tolerance
+  based on the axis increment"""
+  ref_values = np.asarray(reference.values, dtype=np.float64)
+  values = np.asarray(other.values, dtype=np.float64) - ref_values
+  units = f" {reference.attrs['units']}" if "units" in reference.attrs else ""
+  increment = None
+
+  if dim == "frequency" and ref_values.size < 2:
+    increment = abs(float(reference.attrs["channel_width"]["data"]))
+  elif ref_values.size >= 2:
+    increment = abs(ref_values[-1] - ref_values[0]) / (ref_values.size - 1)
+
+  if increment:
+    return Offsets(values, COORD_MATCH_TOLERANCE * increment, units, increment)
+
+  largest_value = max(1.0, float(np.abs(ref_values).max()))
+  return Offsets(values, SINGLE_VALUE_TOLERANCE * largest_value, units, None)
+
+
+def check_labels(reference: Variable, other: Variable, prefix: str) -> None:
+  """Checks that two label coordinates hold the same labels"""
+  if sorted(reference.values.tolist()) != sorted(other.values.tolist()):
+    raise IncompatibleImages(
+      f"{prefix} has the labels {other.values.tolist()}, "
+      f"theirs has {reference.values.tolist()}"
+    )
 
 
 def snap(dim: str, reference: Variable, other: Variable, prefix: str) -> Variable:
@@ -77,45 +124,26 @@ def snap(dim: str, reference: Variable, other: Variable, prefix: str) -> Variabl
     )
 
   if reference.dtype.kind not in "iuf" or other.dtype.kind not in "iuf":
-    if sorted(reference.values.tolist()) != sorted(other.values.tolist()):
-      raise IncompatibleImages(
-        f"{prefix} has the labels {other.values.tolist()}, "
-        f"theirs has {reference.values.tolist()}"
-      )
+    check_labels(reference, other, prefix)
     return other
-
-  increment = None
 
   if dim == "time":
     offsets = time_offsets(reference, other)
-    tolerance = TIME_MATCH_TOLERANCE_S
-    units = " s"
   else:
-    ref_values = np.asarray(reference.values, dtype=np.float64)
-    offsets = np.asarray(other.values, dtype=np.float64) - ref_values
-    units = f" {reference.attrs['units']}" if "units" in reference.attrs else ""
+    offsets = numeric_offsets(dim, reference, other)
 
-    if dim == "frequency" and ref_values.size < 2:
-      width = reference.attrs["channel_width"]
-      increment = abs(float(width["data"]))
-    elif ref_values.size >= 2:
-      increment = abs(ref_values[-1] - ref_values[0]) / (ref_values.size - 1)
+  largest = float(np.abs(offsets.values).max()) if offsets.values.size else 0.0
+  units = offsets.units
 
-    if increment:
-      tolerance = COORD_MATCH_TOLERANCE * increment
-    else:
-      increment = None
-      tolerance = SINGLE_VALUE_TOLERANCE * max(1.0, float(np.abs(ref_values).max()))
-
-  largest = float(np.abs(offsets).max()) if offsets.size else 0.0
-
-  if largest > tolerance:
+  if largest > offsets.tolerance:
     fraction = (
-      f" ({largest / increment:.3g} of the {dim} increment)" if increment else ""
+      f" ({largest / offsets.increment:.3g} of the {dim} increment)"
+      if offsets.increment
+      else ""
     )
     raise IncompatibleImages(
       f"{prefix} differs from theirs by up to {largest:g}{units}{fraction}, "
-      f"more than the tolerance of {tolerance:g}{units}. "
+      f"more than the tolerance of {offsets.tolerance:g}{units}. "
       f"Images opened together must share their coordinates."
     )
 

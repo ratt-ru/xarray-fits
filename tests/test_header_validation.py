@@ -123,3 +123,14 @@ def test_other_extensions_are_ignored_with_a_warning(tmp_path):
   path = simulate_fits_image(tmp_path / "other.fits", extra_hdus=[other])
   with pytest.warns(IgnoredHduWarning, match="OTHER"):
     open_image(path)
+
+
+@pytest.mark.parametrize("card", ["CTYPE1", "CRVAL2", "CDELT3", "CRPIX1"])
+def test_missing_required_cards_are_rejected(tmp_path, card):
+  path = simulate_fits_image(tmp_path / "image.fits")
+
+  with fits.open(path, mode="update") as hdu_list:
+    del hdu_list[0].header[card]
+
+  with pytest.raises(InvalidFitsImage, match=card):
+    open_image(path)
