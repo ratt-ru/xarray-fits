@@ -101,8 +101,13 @@ class FitsStore(AbstractDataStore):
     structure = self._structure_factory.instance
     group = {"sky": "SKY"}
 
-    if (flag := self.image_factory().flag) is not None:
+    factory = self.image_factory()
+
+    if (flag := factory.flag) is not None:
       group["flag"] = flag
+
+    if (beam_fit_params := factory.beam_fit_params) is not None:
+      group["beam_fit_params_sky"] = beam_fit_params
 
     return {
       "coordinate_system_info": structure.coordinate_system.to_attrs(),

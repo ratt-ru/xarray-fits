@@ -81,6 +81,15 @@ class ImageFactory:
       return None
     return name
 
+  @property
+  def beam_fit_params(self) -> str | None:
+    """Name of the Image's beam variable, if it has beams"""
+    name = f"BEAM_FIT_PARAMS_{self._role}"
+    structure = self._structure_factory.instance
+    if structure.beams is None or name in self._drop_variables:
+      return None
+    return name
+
   def get_variables(self) -> Mapping[str, Variable]:
     """Returns the Image's data variables and coordinates"""
     structure = self._structure_factory.instance
@@ -114,6 +123,9 @@ class ImageFactory:
     if (flag := self.flag) is not None:
       attrs["flag"] = flag
 
+    if (beam_fit_params := self.beam_fit_params) is not None:
+      attrs["beam_fit_params"] = beam_fit_params
+
     encoding = {
       "preferred_chunks": {
         d: c for d, c in self._preferred_chunks.items() if d in SKY_DIMS
@@ -141,6 +153,13 @@ class ImageFactory:
     if flag is not None:
       flags = LazilyIndexedArray(FlagArray(array))
       variables[flag] = Variable(SKY_DIMS, flags, {"type": "flag"}, encoding)
+
+    if beam_fit_params is not None:
+      variables[beam_fit_params] = Variable(
+        ("time", "frequency", "polarization", "beam_params_label"),
+        structure.beams,
+        {"units": "rad", "type": f"beam_fit_params_{self._role.lower()}"},
+      )
 
     if spectral.velocity is not None:
       variables["velocity"] = coordinate(

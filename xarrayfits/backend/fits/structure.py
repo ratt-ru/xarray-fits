@@ -6,6 +6,7 @@ import numpy as np
 from rarg_python_patterns.multiton import Multiton
 
 from xarrayfits.backend.fits.axes import AxisLayout, dtype_from_bitpix, read_axes
+from xarrayfits.backend.fits.beams import read_beams
 from xarrayfits.backend.fits.coordinate_system import (
   CoordinateSystem,
   read_coordinate_system,
@@ -40,6 +41,7 @@ class FitsImageStructure:
     "polarization_order",
     "spectral",
     "observation",
+    "beams",
   )
 
   layout: AxisLayout
@@ -49,9 +51,11 @@ class FitsImageStructure:
   polarization_order: List[int]
   spectral: Spectral
   observation: Observation
+  beams: npt.NDArray[np.float64] | None
 
   def __init__(self, file_factory: FitsFileFactory):
-    header = primary_header(file_factory.instance.hdu_list)
+    hdu_list = file_factory.instance.hdu_list
+    header = primary_header(hdu_list)
     self.layout = read_axes(header)
     self.dtype = dtype_from_bitpix(header)
     self.coordinate_system = read_coordinate_system(header, self.layout)
@@ -60,6 +64,9 @@ class FitsImageStructure:
     self.polarizations = [fits_polarizations[i] for i in self.polarization_order]
     self.spectral = read_spectral(header, self.layout)
     self.observation = read_observation(header, self.layout, self.coordinate_system)
+    self.beams = read_beams(
+      hdu_list, self.polarization_order, self.spectral.frequency.size
+    )
 
   def direction_values(self, fits_axis: int) -> npt.NDArray[np.float64]:
     """Returns the projection plane coordinates of a celestial axis in radians"""
