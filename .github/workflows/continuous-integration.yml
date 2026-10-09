@@ -1,0 +1,35 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - "*"
+  pull_request:
+  schedule:
+    - cron: '30 2 * * 1,4' # Every Monday and Thursday @ 2h30am UTC
+
+jobs:
+  test:
+    uses: ratt-ru/rarg-gh-workflows/.github/workflows/python-ci.yml@main
+    with:
+      install-command: 'pip install --group test .'
+
+  # Real FITS Images are downloaded, so test them on a single runner
+  test-corpus:
+    uses: ratt-ru/rarg-gh-workflows/.github/workflows/python-ci.yml@main
+    with:
+      os-matrix: '["ubuntu-24.04"]'
+      python-versions: '["3.13"]'
+      install-command: 'pip install --group test .'
+      test-command: 'py.test -s -vvv tests/ -Werror --fits_test_corpus'
+
+  deploy:
+    needs: ["test", "test-corpus"]
+    uses: ratt-ru/rarg-gh-workflows/.github/workflows/python-deploy.yml@main
+    with:
+      package-name: xarray-fits
+      pypi-environment: release
+    permissions:
+      id-token: write

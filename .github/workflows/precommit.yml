@@ -1,0 +1,9 @@
+name: pre-commit
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pre-commit:
+    uses: ratt-ru/rarg-gh-workflows/.github/workflows/precommit.yml@main

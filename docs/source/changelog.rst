@@ -7,6 +7,7 @@ Changelog
   xarray backend, alone or several together
 * Remove ``xds_from_fits``, which ``xarray.open_dataset`` replaces
 * Adopt the xarray-ms tooling and code style
+* Run CI through the shared rarg-gh-workflows templates
 
 0.2.6 (26-02-2026)
 ------------------
