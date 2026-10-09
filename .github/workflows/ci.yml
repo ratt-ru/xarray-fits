@@ -42,13 +42,22 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Download test corpus metadata
+        run: curl https://downloadnrao.org/file.download.json > metadata.json
+
+      - name: Load cached FITS test corpus
+        uses: actions/cache@v4
+        with:
+          key: fits-test-corpus-${{ hashFiles('metadata.json') }}
+          path: ~/.cache/xarray-fits/fits-test-data
+
       - name: Install xarray-fits
         run: |
           pip install -U pip
           pip install --group test .
 
       - name: Test xarray-fits
-        run: py.test -s -vvv tests/ -Werror
+        run: py.test -s -vvv tests/ -Werror --fits_test_corpus
 
       # - name: Debug with tmate on failure
       #   if: ${{ failure() }}

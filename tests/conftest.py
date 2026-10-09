@@ -14,6 +14,32 @@ except ImportError:
   reference_open_image = None
 
 
+def pytest_addoption(parser):
+  parser.addoption(
+    "--fits_test_corpus",
+    action="store_true",
+    default=False,
+    help="Run tests against the real FITS Images of the test corpus",
+  )
+
+
+def pytest_configure(config):
+  config.addinivalue_line(
+    "markers", "fits_test_corpus: tests against real FITS Images, which download them"
+  )
+
+
+def pytest_collection_modifyitems(config, items):
+  if config.getoption("--fits_test_corpus"):
+    return
+
+  skip = pytest.mark.skip(reason="needs --fits_test_corpus")
+
+  for item in items:
+    if "fits_test_corpus" in item.keywords:
+      item.add_marker(skip)
+
+
 @pytest.fixture(autouse=True)
 def clear_multiton_cache():
   yield
