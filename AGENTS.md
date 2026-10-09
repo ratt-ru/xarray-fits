@@ -21,4 +21,4 @@ Single-context: root `CONTEXT.md` plus `docs/adr/`. See `docs/agents/domain.md`.
 - Lint, format and type-check: `uv run pre-commit run -a`
 - Code style: 2-space indentation, line length 88, Google docstrings
 - Changelog: `docs/source/changelog.rst`, newest first, entries end with `(:pr:`NNN`)`
-- Release: `uv run tbump X.Y.Z` bumps `pyproject.toml`, `docs/source/conf.py` and `xarrayfits/__init__.py`
+- Release: `uv run tbump X.Y.Z` bumps `pyproject.toml` and `docs/source/conf.py`

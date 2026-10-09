@@ -1,13 +1,12 @@
 [project]
 name = "xarray-fits"
 version = "0.2.6"
-description = "xarray Datasets for FITS-like data"
+description = "xarray MSv4 Image Datasets over FITS Images"
 authors = [{name = "Simon Perkins", email = "simon.perkins@gmail.com"}]
 readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = [
     "astropy>=7.0",
-    "dask[array]",
     "xarray>=2025.0",
     "fsspec",
     "rarg-python-patterns>=0.0.5",
@@ -78,7 +77,3 @@ search = 'version = "{current_version}"'
 [[tool.tbump.file]]
 src = "docs/source/conf.py"
 search = 'release = "{current_version}"'
-
-[[tool.tbump.file]]
-src = "xarrayfits/__init__.py"
-search = '__version__ = "{current_version}"'

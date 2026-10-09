@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.3.0 (unreleased)
+------------------
+* Open FITS Images as MSv4 Image Datasets through the ``xarray-fits:fits``
+  xarray backend, alone or several together
+* Remove ``xds_from_fits``, which ``xarray.open_dataset`` replaces
+* Adopt the xarray-ms tooling and code style
+
 0.2.6 (26-02-2026)
 ------------------
 * Update tested Python range to 3.11 - 3.13 inclusive (:pr:`48`)

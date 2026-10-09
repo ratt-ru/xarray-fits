@@ -42,7 +42,7 @@ intersphinx_mapping = {
 }
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build"]
+exclude_patterns = ["_build", "generated"]
 
 # -- Options for HTML output
 

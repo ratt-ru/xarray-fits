@@ -1,22 +1,23 @@
-Welcome to xarray-fits's documentation!
-=======================================
+xarray-fits
+===========
 
-**xarray-fits** is a Python library for
-expressing FITS files as xarray datasets.
+**xarray-fits** presents FITS Images as Image Datasets that conform to the
+MSv4 Image Schema, through an xarray backend.
 
-Check out the :doc:`usage` section for further information, including
-how to :ref:`installation` the project.
+.. code-block:: python
 
-.. note::
+  import xarray as xr
 
-   This project is under active development.
+  ds = xr.open_dataset("cube.image.fits", engine="xarray-fits:fits")
 
-Contents
---------
+Pixels are read lazily, and FITS Images may be local files or any
+`fsspec <https://filesystem-spec.readthedocs.io>`_ URL.
 
 .. toctree::
-   :maxdepth: 3
+  :maxdepth: 2
 
-   usage
-   api
-   changelog
+  install
+  tutorial
+  image_dataset
+  api
+  changelog
