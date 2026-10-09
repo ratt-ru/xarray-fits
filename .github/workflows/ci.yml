@@ -43,10 +43,12 @@ jobs:
           fetch-depth: 1
 
       - name: Install xarray-fits
-        run: pip install .[testing]
+        run: |
+          pip install -U pip
+          pip install --group test .
 
       - name: Test xarray-fits
-        run: py.test -s -vvv tests
+        run: py.test -s -vvv tests/ -Werror
 
       # - name: Debug with tmate on failure
       #   if: ${{ failure() }}

@@ -1,19 +1,18 @@
-=======
-History
-=======
+Changelog
+=========
 
-0.2.6 (2026-02-26)
+0.2.6 (26-02-2026)
 ------------------
 * Update tested Python range to 3.11 - 3.13 inclusive (:pr:`48`)
 * Update base supported Python to 3.11 (:pr:`48`)
 * Remove dependency guards (:pr:`48`)
 * Migrate to PEP 621 compliant pyproject.toml (:pr:`47`)
 
-0.2.5 (2025-05-20)
+0.2.5 (20-05-2025)
 ------------------
 * Include full range of 2024 calver dependencies (:pr:`42`)
 
-0.2.4 (2024-04-15)
+0.2.4 (15-04-2024)
 ------------------
 * Modernise documentation (:pr:`38`)
 * Add basic Affine Grid coordinates to xarray datasets (:pr:`35`)
@@ -21,22 +20,22 @@ History
 * Specify dtype during chunk normalisation (:pr:`33`)
 * Configure dependabot for github actions (:pr:`28`)
 
-0.2.3 (2024-03-22)
+0.2.3 (22-03-2024)
 ------------------
 * Move FITS header attributes into an xarray "header" attribute (:pr:`22`)
 
-0.2.2 (2024-03-21)
+0.2.2 (21-03-2024)
 ------------------
 * Open FITS files as memory-mapped on local file systems (:pr:`24`)
 * Remove obsolete logger (:pr:`23`)
 * Support lists of fits files (:pr:`21`)
 * Test stacking in the globbing case (:pr:`20`)
 
-0.2.1 (2024-03-19)
+0.2.1 (19-03-2024)
 ------------------
 * Make distributed an optional package (:pr:`19`)
 
-0.2.0 (2024-03-19)
+0.2.0 (19-03-2024)
 ------------------
 * Update README (:pr:`18`)
 * Convert from FITS big-endian to machine native (:pr:`17`)
@@ -53,7 +52,7 @@ History
 * Update Github Actions Deployment (:pr:`6`)
 * Modernise xarray-fits (:pr:`5`)
 
-0.1.0 (2018-02-19)
+0.1.0 (19-02-2018)
 ------------------
 
 * First release on PyPI.

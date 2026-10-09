@@ -19,4 +19,4 @@ Contents
 
    usage
    api
-   history
+   changelog
