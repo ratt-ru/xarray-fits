@@ -134,3 +134,21 @@ class SkyCoordinateArray(BackendArray):
     xx, yy = np.meshgrid(x, y, indexing="ij")
     world = wcs.pixel_to_world_values(xx, yy)[self._component]
     return (world * DEG_TO_RAD).squeeze(axis=squeeze)
+
+
+class FlagArray(BackendArray):
+  """Lazily flags the NaN pixels of a FITS Image"""
+
+  __slots__ = ("shape", "dtype", "_image")
+
+  shape: Tuple[int, ...]
+  dtype: np.dtype
+  _image: FitsImageArray
+
+  def __init__(self, image: FitsImageArray):
+    self._image = image
+    self.shape = image.shape
+    self.dtype = np.dtype(bool)
+
+  def __getitem__(self, key) -> npt.NDArray:
+    return np.isnan(self._image[key])

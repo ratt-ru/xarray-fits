@@ -21,7 +21,7 @@ def test_simple_fits_image_opens_as_an_image_dataset(tmp_path):
 
   assert ds.attrs["type"] == "image_dataset"
   assert ds.attrs["schema_version"] == "0.0.2"
-  assert ds.attrs["data_groups"] == {"base": {"sky": "SKY"}}
+  assert ds.attrs["data_groups"] == {"base": {"sky": "SKY", "flag": "FLAG_SKY"}}
   assert ds.SKY.dims == ("time", "frequency", "polarization", "l", "m")
   assert ds.SKY.dtype == np.float32
   assert ds.polarization.values.tolist() == ["I"]

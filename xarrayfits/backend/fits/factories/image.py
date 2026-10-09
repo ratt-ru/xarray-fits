@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Tuple
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Mapping, Tuple
 
 import numpy as np
 from xarray import Variable
 from xarray.core.indexing import LazilyIndexedArray
 
-from xarrayfits.backend.fits.array import FitsImageArray, SkyCoordinateArray
+from xarrayfits.backend.fits.array import (
+  FitsImageArray,
+  FlagArray,
+  SkyCoordinateArray,
+)
 from xarrayfits.backend.fits.coordinate_system import sky_wcs_cards
 from xarrayfits.msv4_image_types import BEAM_PARAMS_LABELS, L_M_NOTES, SKY_DIMS
 
@@ -39,12 +43,19 @@ def image_type(role: str) -> str:
 class ImageFactory:
   """Creates the variables of an Image held by a FITS Image"""
 
-  __slots__ = ("_role", "_file_factory", "_structure_factory", "_preferred_chunks")
+  __slots__ = (
+    "_role",
+    "_file_factory",
+    "_structure_factory",
+    "_preferred_chunks",
+    "_drop_variables",
+  )
 
   _role: str
   _file_factory: FitsFileFactory
   _structure_factory: FitsImageStructureFactory
   _preferred_chunks: Dict[str, int]
+  _drop_variables: FrozenSet[str]
 
   def __init__(
     self,
@@ -52,11 +63,23 @@ class ImageFactory:
     file_factory: FitsFileFactory,
     structure_factory: FitsImageStructureFactory,
     preferred_chunks: Dict[str, int],
+    drop_variables: FrozenSet[str] = frozenset(),
   ):
     self._role = role
     self._file_factory = file_factory
     self._structure_factory = structure_factory
     self._preferred_chunks = preferred_chunks
+    self._drop_variables = drop_variables
+
+  @property
+  def flag(self) -> str | None:
+    """Name of the Image's flag variable. Floating point Images are
+    flagged where they are NaN (see ADR 0001)"""
+    name = f"FLAG_{self._role}"
+    structure = self._structure_factory.instance
+    if structure.dtype.kind != "f" or name in self._drop_variables:
+      return None
+    return name
 
   def get_variables(self) -> Mapping[str, Variable]:
     """Returns the Image's data variables and coordinates"""
@@ -88,6 +111,9 @@ class ImageFactory:
     if observation.sub_type is not None:
       attrs["sub_type"] = observation.sub_type
 
+    if (flag := self.flag) is not None:
+      attrs["flag"] = flag
+
     encoding = {
       "preferred_chunks": {
         d: c for d, c in self._preferred_chunks.items() if d in SKY_DIMS
@@ -111,6 +137,10 @@ class ImageFactory:
         "beam_params_label", ("beam_params_label",), np.asarray(BEAM_PARAMS_LABELS)
       ),
     }
+
+    if flag is not None:
+      flags = LazilyIndexedArray(FlagArray(array))
+      variables[flag] = Variable(SKY_DIMS, flags, {"type": "flag"}, encoding)
 
     if spectral.velocity is not None:
       variables["velocity"] = coordinate(

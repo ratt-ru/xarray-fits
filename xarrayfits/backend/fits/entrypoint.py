@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Iterable
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable
 
 from rarg_python_patterns.multiton import Multiton
 from xarray.backends import BackendEntrypoint
@@ -35,28 +35,58 @@ if TYPE_CHECKING:
 class FitsStore(AbstractDataStore):
   """Store reading Image Datasets from FITS Images"""
 
-  __slots__ = ("_file_factory", "_structure_factory", "_preferred_chunks")
+  __slots__ = (
+    "_file_factory",
+    "_structure_factory",
+    "_preferred_chunks",
+    "_drop_variables",
+  )
 
   _file_factory: FitsFileFactory
   _structure_factory: FitsImageStructureFactory
   _preferred_chunks: Dict[str, int]
+  _drop_variables: FrozenSet[str]
 
   def __init__(
     self,
     file_factory: FitsFileFactory,
     structure_factory: FitsImageStructureFactory,
     preferred_chunks: Dict[str, int],
+    drop_variables: FrozenSet[str],
   ):
     self._file_factory = file_factory
     self._structure_factory = structure_factory
     self._preferred_chunks = preferred_chunks
+    self._drop_variables = drop_variables
 
   @classmethod
-  def open(cls, path: str, preferred_chunks: Dict[str, int] | None = None) -> FitsStore:
+  def open(
+    cls,
+    path: str,
+    drop_variables: str | Iterable[str] | None = None,
+    preferred_chunks: Dict[str, int] | None = None,
+  ) -> FitsStore:
     file_factory = Multiton(FitsFile, path, os.stat(path).st_mtime_ns)
     structure_factory = Multiton(FitsImageStructure, file_factory)
     preferred_chunks = {**DEFAULT_PREFERRED_CHUNKS, **(preferred_chunks or {})}
-    return cls(file_factory, structure_factory, preferred_chunks)
+
+    if drop_variables is None:
+      drop_variables = ()
+    elif isinstance(drop_variables, str):
+      drop_variables = (drop_variables,)
+
+    return cls(
+      file_factory, structure_factory, preferred_chunks, frozenset(drop_variables)
+    )
+
+  def image_factory(self) -> ImageFactory:
+    return ImageFactory(
+      "SKY",
+      self._file_factory,
+      self._structure_factory,
+      self._preferred_chunks,
+      self._drop_variables,
+    )
 
   def close(self, **kwargs) -> None:
     self._file_factory.release()
@@ -64,17 +94,19 @@ class FitsStore(AbstractDataStore):
 
   def get_variables(self):
     """Overrides AbstractDataStore.get_variables"""
-    factory = ImageFactory(
-      "SKY", self._file_factory, self._structure_factory, self._preferred_chunks
-    )
-    return factory.get_variables()
+    return self.image_factory().get_variables()
 
   def get_attrs(self) -> Dict[str, Any]:
     """Overrides AbstractDataStore.get_attrs"""
     structure = self._structure_factory.instance
+    group = {"sky": "SKY"}
+
+    if (flag := self.image_factory().flag) is not None:
+      group["flag"] = flag
+
     return {
       "coordinate_system_info": structure.coordinate_system.to_attrs(),
-      "data_groups": {"base": {"sky": "SKY"}},
+      "data_groups": {"base": group},
       "schema_version": IMAGE_SCHEMA_VERSION,
       "type": IMAGE_DATASET_TYPE,
     }
@@ -122,6 +154,8 @@ class FitsEntryPoint(BackendEntrypoint):
       An Image Dataset.
     """
     path = _xr_normalize_path(filename_or_obj)
-    store = FitsStore.open(path, preferred_chunks=preferred_chunks)
+    store = FitsStore.open(
+      path, drop_variables=drop_variables, preferred_chunks=preferred_chunks
+    )
     store_entrypoint = StoreBackendEntrypoint()
     return store_entrypoint.open_dataset(store, drop_variables=drop_variables)
