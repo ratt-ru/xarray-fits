@@ -1,10 +1,14 @@
 API
 ===
 
-.. autosummary::
-   :toctree: generated
+FITS Images open through :func:`xarray.open_dataset` with the
+``xarray-fits:fits`` engine, whose arguments are:
 
-Reading from FITS files
------------------------
+.. autoclass:: xarrayfits.backend.fits.entrypoint.FitsEntryPoint
+  :members: open_dataset
 
-.. autofunction:: xarrayfits.xds_from_fits
+Warnings and errors
+-------------------
+
+.. automodule:: xarrayfits.errors
+  :members:

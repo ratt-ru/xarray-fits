@@ -1,27 +1,40 @@
 [project]
 name = "xarray-fits"
 version = "0.2.6"
-description = "xarray Datasets for FITS-like data"
+description = "xarray MSv4 Image Datasets over FITS Images"
 authors = [{name = "Simon Perkins", email = "simon.perkins@gmail.com"}]
 readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = [
-    "astropy",
-    "dask[array]",
-    "xarray",
+    "astropy>=7.0",
+    "xarray>=2025.0",
     "fsspec",
+    "rarg-python-patterns>=0.0.5",
 ]
 
-[project.optional-dependencies]
-testing = [
-    "pytest",
-    "distributed",
+[dependency-groups]
+test = [
+    "pytest>=8.0.0",
+    "dask>=2024.5.0",
+    "distributed>=2024.5.0",
+    "platformdirs>=4.3.8",
+    "aiohttp>=3.9",
+    # Conformance oracle, pinned until a release ships image schema 0.0.2
+    "xradio[zarr] @ git+https://github.com/casangi/xradio@70412d6183ed8aebeea49dbcef57bbb9e04917a9 ; python_version < '3.14'",
 ]
 dev = [
-    "tbump>=6.9.0,<7",
-    "pre-commit>=2.20.0,<3",
-    "ruff>=0.1.3,<0.2",
+    "pre-commit>=3.8.0",
+    "tbump>=6.11.0",
 ]
+doc = [
+    "sphinx>=8.0.2",
+    "pygments>=2.18.0",
+    "sphinx-copybutton>=0.5.2",
+    "pydata-sphinx-theme>=0.15.4",
+]
+
+[project.entry-points."xarray.backends"]
+"xarray-fits:fits" = "xarrayfits.backend.fits.entrypoint:FitsEntryPoint"
 
 [build-system]
 requires = ["hatchling"]
@@ -32,18 +45,35 @@ packages = ["xarrayfits"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+indent-width = 2
+target-version = "py311"
 
-select = [
-    # flake8-builtins
-    "A",
-    # flake8-bugbear
-    "B",
-    # isort
-    "I001",
-    "I002",
-    # tidy imports
-    "TID"
-]
-
+[tool.ruff.lint]
+select = ["F", "E", "W", "I001"]
 extend-select = ["I"]
+
+[tool.tbump]
+github_url = "https://github.com/ratt-ru/xarray-fits"
+
+[tool.tbump.version]
+current = "0.2.6"
+
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  '''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "{new_version}"
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
+search = 'version = "{current_version}"'
+
+[[tool.tbump.file]]
+src = "docs/source/conf.py"
+search = 'release = "{current_version}"'
