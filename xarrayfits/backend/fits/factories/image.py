@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Mapping, Tuple
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Tuple
 
 import numpy as np
 from xarray import Variable
@@ -12,11 +12,14 @@ from xarrayfits.backend.fits.array import (
   SkyCoordinateArray,
 )
 from xarrayfits.backend.fits.coordinate_system import sky_wcs_cards
-from xarrayfits.msv4_image_types import BEAM_PARAMS_LABELS, L_M_NOTES, SKY_DIMS
+from xarrayfits.backend.fits.roles import VISIBILITY_NORMALIZATION, is_sky
+from xarrayfits.errors import InvalidFitsImage
+from xarrayfits.msv4_image_types import L_M_NOTES, SKY_DIMS
 
 if TYPE_CHECKING:
   from xarrayfits.backend.fits.structure import (
     FitsFileFactory,
+    FitsImageStructure,
     FitsImageStructureFactory,
   )
 
@@ -37,7 +40,7 @@ def coordinate(
 
 def image_type(role: str) -> str:
   """Returns the ``type`` attribute of an Image with the given Role"""
-  return "sky" if "sky" in role.lower() else role.lower()
+  return "sky" if is_sky(role) else role.lower()
 
 
 class ImageFactory:
@@ -72,6 +75,11 @@ class ImageFactory:
     self._drop_variables = drop_variables
 
   @property
+  def structure(self) -> FitsImageStructure:
+    """The parsed structure of the FITS Image"""
+    return self._structure_factory.instance
+
+  @property
   def flag(self) -> str | None:
     """Name of the Image's flag variable. Floating point Images are
     flagged where they are NaN (see ADR 0001)"""
@@ -90,30 +98,47 @@ class ImageFactory:
       return None
     return name
 
-  def get_variables(self) -> Mapping[str, Variable]:
+  @property
+  def dims(self) -> Tuple[str, ...]:
+    """Dimensions of the Image"""
+    return SKY_DIMS[:3] if self._role == VISIBILITY_NORMALIZATION else SKY_DIMS
+
+  def get_variables(self) -> Dict[str, Variable]:
     """Returns the Image's data variables and coordinates"""
     structure = self._structure_factory.instance
     layout = structure.layout
     observation = structure.observation
     spectral = structure.spectral
+    dims = self.dims
     lon = structure.direction_values(layout.lon)
     lat = structure.direction_values(layout.lat)
     polarizations = np.asarray(structure.polarizations)
-    wcs_cards = sky_wcs_cards(layout, structure.coordinate_system)
-    ra = LazilyIndexedArray(SkyCoordinateArray(wcs_cards, 0))
-    dec = LazilyIndexedArray(SkyCoordinateArray(wcs_cards, 1))
 
-    numpy_axes = (
+    if "l" not in dims and (lon.size, lat.size) != (1, 1):
+      raise InvalidFitsImage(
+        f"The {self._role} image {self._file_factory.instance.url} must have "
+        f"direction axes of one pixel, found {(lon.size, lat.size)} pixels"
+      )
+
+    # Sky-plane dimensions, of which an Image without directions
+    # has the first three
+    ndim = len(dims)
+    numpy_axes: Tuple[int | None, ...] = (
       None,
       layout.numpy_axis(layout.frequency),
       layout.numpy_axis(layout.polarization),
       layout.numpy_axis(layout.lon),
       layout.numpy_axis(layout.lat),
     )
-    orders = (None, None, np.asarray(structure.polarization_order), None, None)
     shape = (1, spectral.frequency.size, polarizations.size, lon.size, lat.size)
+    orders = (None, None, np.asarray(structure.polarization_order), None, None)
     array = FitsImageArray(
-      self._file_factory, numpy_axes, orders, shape, structure.dtype
+      self._file_factory,
+      len(layout.axes),
+      numpy_axes[:ndim],
+      orders[:ndim],
+      shape[:ndim],
+      structure.dtype,
     )
     attrs = {**observation.image_attrs, "type": image_type(self._role)}
 
@@ -127,13 +152,11 @@ class ImageFactory:
       attrs["beam_fit_params"] = beam_fit_params
 
     encoding = {
-      "preferred_chunks": {
-        d: c for d, c in self._preferred_chunks.items() if d in SKY_DIMS
-      }
+      "preferred_chunks": {d: c for d, c in self._preferred_chunks.items() if d in dims}
     }
 
     variables = {
-      self._role: Variable(SKY_DIMS, LazilyIndexedArray(array), attrs, encoding),
+      self._role: Variable(dims, LazilyIndexedArray(array), attrs, encoding),
       "time": coordinate(
         "time", ("time",), [observation.mjd], observation.time_attrs()
       ),
@@ -141,29 +164,31 @@ class ImageFactory:
         "frequency", ("frequency",), spectral.frequency, spectral.frequency_attrs()
       ),
       "polarization": coordinate("polarization", ("polarization",), polarizations),
-      "l": coordinate("l", ("l",), lon, {"note": L_M_NOTES["l"]}),
-      "m": coordinate("m", ("m",), lat, {"note": L_M_NOTES["m"]}),
-      "right_ascension": coordinate("right_ascension", ("l", "m"), ra),
-      "declination": coordinate("declination", ("l", "m"), dec),
-      "beam_params_label": coordinate(
-        "beam_params_label", ("beam_params_label",), np.asarray(BEAM_PARAMS_LABELS)
-      ),
     }
+
+    if spectral.velocity is not None:
+      variables["velocity"] = coordinate(
+        "velocity", ("frequency",), spectral.velocity, spectral.velocity_attrs()
+      )
+
+    if "l" in dims:
+      wcs_cards = sky_wcs_cards(layout, structure.coordinate_system)
+      ra = LazilyIndexedArray(SkyCoordinateArray(wcs_cards, 0))
+      dec = LazilyIndexedArray(SkyCoordinateArray(wcs_cards, 1))
+      variables["l"] = coordinate("l", ("l",), lon, {"note": L_M_NOTES["l"]})
+      variables["m"] = coordinate("m", ("m",), lat, {"note": L_M_NOTES["m"]})
+      variables["right_ascension"] = coordinate("right_ascension", ("l", "m"), ra)
+      variables["declination"] = coordinate("declination", ("l", "m"), dec)
 
     if flag is not None:
       flags = LazilyIndexedArray(FlagArray(array))
-      variables[flag] = Variable(SKY_DIMS, flags, {"type": "flag"}, encoding)
+      variables[flag] = Variable(dims, flags, {"type": "flag"}, encoding)
 
     if beam_fit_params is not None:
       variables[beam_fit_params] = Variable(
         ("time", "frequency", "polarization", "beam_params_label"),
         structure.beams,
         {"units": "rad", "type": f"beam_fit_params_{self._role.lower()}"},
-      )
-
-    if spectral.velocity is not None:
-      variables["velocity"] = coordinate(
-        "velocity", ("frequency",), spectral.velocity, spectral.velocity_attrs()
       )
 
     return variables

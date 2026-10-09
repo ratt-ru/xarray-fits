@@ -26,19 +26,28 @@ def outer_index(key, shape: Tuple[int, ...]) -> Tuple[list, Tuple[int, ...]]:
 
 class FitsImageArray(BackendArray):
   """Lazily reads the primary HDU pixels of a FITS Image as an array
-  of sky-plane dimensions"""
+  of Image dimensions"""
 
-  __slots__ = ("shape", "dtype", "_file_factory", "_numpy_axes", "_orders")
+  __slots__ = (
+    "shape",
+    "dtype",
+    "_file_factory",
+    "_file_ndim",
+    "_numpy_axes",
+    "_orders",
+  )
 
   shape: Tuple[int, ...]
   dtype: np.dtype
   _file_factory: FitsFileFactory
+  _file_ndim: int
   _numpy_axes: Tuple[int | None, ...]
   _orders: Tuple[npt.NDArray[np.intp] | None, ...]
 
   def __init__(
     self,
     file_factory: FitsFileFactory,
+    file_ndim: int,
     numpy_axes: Tuple[int | None, ...],
     orders: Tuple[npt.NDArray[np.intp] | None, ...],
     shape: Tuple[int, ...],
@@ -48,6 +57,8 @@ class FitsImageArray(BackendArray):
 
     Args:
       file_factory: The FITS file.
+      file_ndim: Number of axes of the FITS pixels. Axes that hold no
+        dimension of the array are read at their first pixel.
       numpy_axes: For each dimension, the numpy axis of the pixels
         holding it, or ``None`` for a dimension of length one
         that the FITS Image does not have.
@@ -57,6 +68,7 @@ class FitsImageArray(BackendArray):
       dtype: Data type of the array.
     """
     self._file_factory = file_factory
+    self._file_ndim = file_ndim
     self._numpy_axes = numpy_axes
     self._orders = orders
     self.shape = shape
@@ -76,8 +88,9 @@ class FitsImageArray(BackendArray):
       return np.empty(expected_shape, dtype=self.dtype).squeeze(axis=squeeze)
 
     present = [a for a in self._numpy_axes if a is not None]
-    region = [slice(None)] * len(present)
-    within = [np.arange(0)] * len(present)
+    fixed = [a for a in range(self._file_ndim) if a not in present]
+    region = [slice(0, 1)] * self._file_ndim
+    within = [np.zeros(1, dtype=np.intp)] * self._file_ndim
 
     for i, axis in zip(index, self._numpy_axes):
       if axis is not None:
@@ -86,7 +99,8 @@ class FitsImageArray(BackendArray):
         within[axis] = i - start
 
     data = self._file_factory.instance.read(tuple(region))
-    data = data[np.ix_(*within)].transpose(present)
+    data = data[np.ix_(*within)].transpose(present + fixed)
+    data = data.reshape(data.shape[: len(present)])
 
     for dim, axis in enumerate(self._numpy_axes):
       if axis is None:

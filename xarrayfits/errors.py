@@ -37,3 +37,7 @@ class UnknownTimeScaleWarning(UnknownMetadataWarning):
 
 class InvalidObservationDateWarning(UnknownMetadataWarning):
   """Warning raised when a FITS Image's observation date cannot be interpreted"""
+
+
+class UnknownRoleWarning(UserWarning):
+  """Warning raised when the name of a FITS Image names no Role"""
