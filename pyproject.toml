@@ -6,16 +6,21 @@ authors = [{name = "Simon Perkins", email = "simon.perkins@gmail.com"}]
 readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = [
-    "astropy",
+    "astropy>=7.0",
     "dask[array]",
-    "xarray",
+    "xarray>=2025.0",
     "fsspec",
+    "rarg-python-patterns>=0.0.5",
 ]
 
 [dependency-groups]
 test = [
     "pytest>=8.0.0",
-    "distributed",
+    "dask>=2024.5.0",
+    "distributed>=2024.5.0",
+    "platformdirs>=4.3.8",
+    # Conformance oracle, pinned until a release ships image schema 0.0.2
+    "xradio[zarr] @ git+https://github.com/casangi/xradio@70412d6183ed8aebeea49dbcef57bbb9e04917a9 ; python_version < '3.14'",
 ]
 dev = [
     "pre-commit>=3.8.0",
@@ -27,6 +32,9 @@ doc = [
     "sphinx-copybutton>=0.5.2",
     "pydata-sphinx-theme>=0.15.4",
 ]
+
+[project.entry-points."xarray.backends"]
+"xarray-fits:fits" = "xarrayfits.backend.fits.entrypoint:FitsEntryPoint"
 
 [build-system]
 requires = ["hatchling"]
