@@ -6,8 +6,8 @@ import numpy as np
 from xarray import Variable
 from xarray.core.indexing import LazilyIndexedArray
 
-from xarrayfits.backend.fits.array import FitsImageArray
-from xarrayfits.backend.fits.coordinate_system import sky_coordinates
+from xarrayfits.backend.fits.array import FitsImageArray, SkyCoordinateArray
+from xarrayfits.backend.fits.coordinate_system import sky_wcs_cards
 from xarrayfits.msv4_image_types import BEAM_PARAMS_LABELS, L_M_NOTES, SKY_DIMS
 
 if TYPE_CHECKING:
@@ -67,7 +67,9 @@ class ImageFactory:
     lon = structure.direction_values(layout.lon)
     lat = structure.direction_values(layout.lat)
     polarizations = np.asarray(structure.polarizations)
-    ra, dec = sky_coordinates(layout, structure.coordinate_system)
+    wcs_cards = sky_wcs_cards(layout, structure.coordinate_system)
+    ra = LazilyIndexedArray(SkyCoordinateArray(wcs_cards, 0))
+    dec = LazilyIndexedArray(SkyCoordinateArray(wcs_cards, 1))
 
     numpy_axes = (
       None,

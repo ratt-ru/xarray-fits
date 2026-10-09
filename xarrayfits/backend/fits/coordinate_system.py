@@ -227,39 +227,33 @@ def read_coordinate_system(header: Header, layout: AxisLayout) -> CoordinateSyst
   )
 
 
-def sky_coordinates(
+def sky_wcs_cards(
   layout: AxisLayout, coordinate_system: CoordinateSystem
-) -> Tuple[np.ndarray, np.ndarray]:
-  """Returns the right ascension and declination of every pixel,
-  in radians, on (l, m) dimensions"""
-  from astropy.wcs import WCS
-
-  wcs_cards: Dict[str, Any] = {}
+) -> Dict[str, Any]:
+  """Returns the cards of a two axis celestial WCS, longitude first,
+  of the FITS Image"""
+  cards: Dict[str, Any] = {}
 
   for n, (i, name) in enumerate(((layout.lon, "RA--"), (layout.lat, "DEC-")), 1):
     axis = layout.axes[i]
-    wcs_cards[f"CTYPE{n}"] = f"{name}-{coordinate_system.projection}"
-    wcs_cards[f"NAXIS{n}"] = axis.naxis
-    wcs_cards[f"CUNIT{n}"] = axis.cunit
-    wcs_cards[f"CDELT{n}"] = axis.cdelt
-    wcs_cards[f"CRPIX{n}"] = axis.crpix + 1
-    wcs_cards[f"CRVAL{n}"] = axis.crval
+    cards[f"CTYPE{n}"] = f"{name}-{coordinate_system.projection}"
+    cards[f"NAXIS{n}"] = axis.naxis
+    cards[f"CUNIT{n}"] = axis.cunit
+    cards[f"CDELT{n}"] = axis.cdelt
+    cards[f"CRPIX{n}"] = axis.crpix + 1
+    cards[f"CRVAL{n}"] = axis.crval
 
   first = 0 if coordinate_system.projection.upper() == "ZPN" else 1
 
   for m, value in enumerate(coordinate_system.projection_parameters, start=first):
     if value != 0:
-      wcs_cards[f"PV2_{m}"] = float(value)
+      cards[f"PV2_{m}"] = float(value)
 
   if not np.array_equal(np.asarray(coordinate_system.pc), np.eye(2)):
     for i in range(2):
       for j in range(2):
-        wcs_cards[f"PC{i + 1}_{j + 1}"] = float(coordinate_system.pc[i][j])
+        cards[f"PC{i + 1}_{j + 1}"] = float(coordinate_system.pc[i][j])
 
-  wcs_cards["LONPOLE"] = coordinate_system.native_pole[0]
-  wcs_cards["LATPOLE"] = coordinate_system.native_pole[1]
-
-  wcs = WCS(wcs_cards)
-  x, y = np.indices(wcs.pixel_shape)
-  ra, dec = wcs.pixel_to_world_values(x, y)
-  return ra * DEG_TO_RAD, dec * DEG_TO_RAD
+  cards["LONPOLE"] = coordinate_system.native_pole[0]
+  cards["LATPOLE"] = coordinate_system.native_pole[1]
+  return cards
